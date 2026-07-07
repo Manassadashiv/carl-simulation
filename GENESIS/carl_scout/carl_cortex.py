@@ -111,7 +111,7 @@ class CarlCortex:
                     self.reset()
                 def reset(self):
                     pass
-                def forward(self, s):
+                def forward(self, s, *args, **kwargs):
                     return np.zeros(16)
             self.arm_policy = DummyPolicy()
 
