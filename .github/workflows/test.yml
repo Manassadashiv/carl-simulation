@@ -28,5 +28,5 @@ jobs:
     - name: Run Stability Test Simulation
       run: |
         # Run test from the directory where the XML files are located
-        cd GENESIS
-        python tests_and_diagnostics/test_stability.py
+        cd GENESIS/carl_scout
+        python ../tests_and_diagnostics/test_stability.py
