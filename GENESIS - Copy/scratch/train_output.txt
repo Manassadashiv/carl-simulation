@@ -1,0 +1,12 @@
+﻿  [BLOB TELEMETRY] Starting WebSocket server on ws://localhost:8766
+[INIT] Bob's true spawn: (0.000, 0.000)
+[BRAIN] Loaded brain from memory/carl_brain (step 25000)
+
+============================================================
+  CARL v4 * Actor-Critic RL * Bob with Real Eyes
+  Lidar: FIXED (self-exclusion active)
+  Brain: Trainable Actor-Critic (not ESN)
+  Curriculum: Active (food range expands as Bob learns)
+============================================================
+
+  [BLOB TELEMETRY] Web client connected.

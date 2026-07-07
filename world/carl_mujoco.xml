@@ -1,0 +1,178 @@
+<mujoco model="carl_elite">
+  <compiler angle="radian" autolimits="true"/>
+  <option gravity="0 0 -9.81" timestep="0.004166667" iterations="50" solver="Newton" tolerance="1e-10"/>
+
+  <visual>
+    <headlight ambient="0.28 0.28 0.33" diffuse="0.55 0.55 0.65" specular="0 0 0"/>
+    <rgba haze="0.04 0.04 0.07 1"/>
+    <map fogstart="7" fogend="18" znear="0.01"/>
+    <quality shadowsize="4096"/>
+  </visual>
+
+  <asset>
+    <texture name="grid" type="2d" builtin="checker" width="512" height="512"
+             rgb1="0.035 0.042 0.090" rgb2="0.055 0.068 0.145"/>
+    <material name="floor_mat"  texture="grid" texrepeat="10 10"
+              reflectance="0.08" shininess="0.15" rgba="0.05 0.06 0.12 1"/>
+    <material name="wall_mat"   rgba="0.07 0.08 0.16 1" reflectance="0.2" shininess="0.5"/>
+    <material name="wall_glow"  rgba="0.15 0.45 1.0 1"  emission="0.6"  reflectance="0" shininess="1"/>
+    <material name="chassis"    rgba="0.15 0.15 0.18 1" reflectance="0.2" shininess="0.6"/>
+    <material name="tire"       rgba="0.05 0.05 0.06 1" reflectance="0"   shininess="0.2"/>
+    <material name="hub"        rgba="0.0 0.75 0.9 1"   reflectance="0.4" shininess="0.9"/>
+    <material name="neck_mat"   rgba="0.72 0.76 0.80 1" reflectance="0.3" shininess="0.7"/>
+    <material name="head_mat"   rgba="0.12 0.12 0.16 1" reflectance="0.2" shininess="0.6"/>
+    <material name="eye_mat"    rgba="0.0 0.9 1.0 1"    emission="0.5"  reflectance="0.5" shininess="1"/>
+    <material name="goal_mat"   rgba="1.0 0.15 0.5 0.95" emission="0.7" reflectance="0.4" shininess="1"/>
+  </asset>
+
+  <default>
+    <geom contype="1" conaffinity="1" condim="3"
+          friction="0.85 0.005 0.0001"
+          solimp="0.99 0.999 0.001" solref="0.004 1"/>
+  </default>
+
+  <worldbody>
+    <!-- Lighting -->
+    <light name="sun"  pos="3.6 3.0 7"  dir="-0.2 -0.2 -1" directional="true"
+           ambient="0.22 0.22 0.28" diffuse="0.55 0.55 0.65" castshadow="true"/>
+    <light name="fill" pos="0 0 5" dir="0.3 0.3 -1" directional="true"
+           ambient="0.08 0.08 0.12" diffuse="0.18 0.22 0.32" castshadow="false"/>
+    <light name="goal_spot" pos="5.4 5.4 2.8" dir="0 0 -1" directional="false"
+           diffuse="0.7 0.08 0.35" attenuation="0 0.05 0.25" castshadow="false"/>
+
+    <!-- Floor -->
+    <geom name="floor" type="plane" size="12 12 0.1" pos="3.6 3.0 0" material="floor_mat"/>
+
+    <!-- === MAZE WALLS (grid cell=1.2m) === -->
+    <!-- Outer boundary -->
+    <geom name="w_s"  type="box" size="3.64 0.04 0.175" pos="3.6  0.0  0.175" material="wall_mat"/>
+    <geom name="w_n"  type="box" size="3.64 0.04 0.175" pos="3.6  6.0  0.175" material="wall_mat"/>
+    <geom name="w_w"  type="box" size="0.04 3.04 0.175" pos="0.0  3.0  0.175" material="wall_mat"/>
+    <geom name="w_e"  type="box" size="0.04 3.04 0.175" pos="7.2  3.0  0.175" material="wall_mat"/>
+    <!-- Glow caps -->
+    <geom name="wg_s" type="box" size="3.64 0.01 0.004" pos="3.6  0.0  0.354" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wg_n" type="box" size="3.64 0.01 0.004" pos="3.6  6.0  0.354" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wg_w" type="box" size="0.01 3.04 0.004" pos="0.0  3.0  0.354" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wg_e" type="box" size="0.01 3.04 0.004" pos="7.2  3.0  0.354" material="wall_glow" contype="0" conaffinity="0"/>
+
+    <!-- Internal walls -->
+    <geom name="wi0" type="box" size="0.04 0.60 0.175" pos="1.2 0.6  0.175" material="wall_mat"/>
+    <geom name="wi1" type="box" size="1.20 0.04 0.175" pos="1.2 2.4  0.175" material="wall_mat"/>
+    <geom name="wi2" type="box" size="0.04 0.60 0.175" pos="1.2 4.2  0.175" material="wall_mat"/>
+    <geom name="wi3" type="box" size="0.04 1.80 0.175" pos="2.4 3.0  0.175" material="wall_mat"/>
+    <geom name="wi4" type="box" size="0.04 1.20 0.175" pos="3.6 1.2  0.175" material="wall_mat"/>
+    <geom name="wi5" type="box" size="1.20 0.04 0.175" pos="3.6 4.8  0.175" material="wall_mat"/>
+    <geom name="wi6" type="box" size="0.04 1.20 0.175" pos="4.8 2.4  0.175" material="wall_mat"/>
+    <geom name="wi7" type="box" size="1.20 0.04 0.175" pos="4.8 3.6  0.175" material="wall_mat"/>
+    <geom name="wi8" type="box" size="0.60 0.04 0.175" pos="6.6 1.2  0.175" material="wall_mat"/>
+    <!-- Internal glow caps -->
+    <geom name="wgi0" type="box" size="0.01 0.60 0.004" pos="1.2 0.6  0.354" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wgi1" type="box" size="1.20 0.01 0.004" pos="1.2 2.4  0.354" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wgi2" type="box" size="0.01 0.60 0.004" pos="1.2 4.2  0.354" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wgi3" type="box" size="0.01 1.80 0.004" pos="2.4 3.0  0.354" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wgi4" type="box" size="0.01 1.20 0.004" pos="3.6 1.2  0.354" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wgi5" type="box" size="1.20 0.01 0.004" pos="3.6 4.8  0.354" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wgi6" type="box" size="0.01 1.20 0.004" pos="4.8 2.4  0.354" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wgi7" type="box" size="1.20 0.01 0.004" pos="4.8 3.6  0.354" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wgi8" type="box" size="0.60 0.01 0.004" pos="6.6 1.2  0.354" material="wall_glow" contype="0" conaffinity="0"/>
+
+    <!-- Goal beacon -->
+    <geom name="goal_sphere" type="sphere"   size="0.18"      pos="5.4 5.4 0.18" material="goal_mat" contype="0" conaffinity="0"/>
+    <geom name="goal_ring"   type="cylinder" size="0.34 0.005" pos="5.4 5.4 0.02" material="goal_mat" contype="0" conaffinity="0"/>
+
+    <!-- === ROBOT A === -->
+    <body name="base_A" pos="0.40 0.40 0.10">
+      <freejoint name="fj_A"/>
+      <geom name="chassis_A" type="box" size="0.06 0.08 0.02" material="chassis" mass="0.5"
+            friction="0.2 0.005 0.0001"/>
+      <inertial pos="0 0 0" mass="0.5" fullinertia="0.001 0.001 0.002 0 0 0"/>
+
+      <body name="lwheel_A" pos="0 0.095 0">
+        <joint name="lw_A" type="hinge" axis="0 1 0" damping="0.02" frictionloss="0.005"/>
+        <geom name="lw_A_tire" type="cylinder" size="0.07 0.0125" euler="1.5708 0 0"
+              material="tire" mass="0.2" friction="1.2 0.005 0.0001"/>
+        <geom name="lw_A_hub"  type="cylinder" size="0.03 0.002"  euler="1.5708 0 0" pos="0 0.013 0"
+              material="hub" contype="0" conaffinity="0" mass="0"/>
+      </body>
+
+      <body name="rwheel_A" pos="0 -0.095 0">
+        <joint name="rw_A" type="hinge" axis="0 1 0" damping="0.02" frictionloss="0.005"/>
+        <geom name="rw_A_tire" type="cylinder" size="0.07 0.0125" euler="1.5708 0 0"
+              material="tire" mass="0.2" friction="1.2 0.005 0.0001"/>
+        <geom name="rw_A_hub"  type="cylinder" size="0.03 0.002"  euler="1.5708 0 0" pos="0 -0.013 0"
+              material="hub" contype="0" conaffinity="0" mass="0"/>
+      </body>
+
+      <body name="neck_A" pos="0 0 0.02">
+        <joint name="neck_A" type="hinge" axis="0 1 0" range="-0.3 0.3" damping="0.1" stiffness="0" springref="0"/>
+        <geom name="neck_A_g" type="cylinder" size="0.008 0.2" pos="0 0 0.2" material="neck_mat" mass="0.1"/>
+        <inertial pos="0 0 0.2" mass="0.1" fullinertia="0.0013 0.0013 0.00001 0 0 0"/>
+        <body name="head_A" pos="0 0 0.4">
+          <geom name="head_A_g" type="box" size="0.05 0.05 0.04" material="head_mat" mass="1.5"/>
+          <geom name="eye_A"    type="box" size="0.001 0.03 0.02" pos="0.051 0 0"
+                material="eye_mat" contype="0" conaffinity="0" mass="0"/>
+          <inertial pos="0 0 0" mass="1.5" fullinertia="0.002 0.002 0.002 0 0 0"/>
+        </body>
+      </body>
+    </body>
+
+    <!-- === ROBOT B === -->
+    <body name="base_B" pos="0.65 0.40 0.10">
+      <freejoint name="fj_B"/>
+      <geom name="chassis_B" type="box" size="0.06 0.08 0.02" material="chassis" mass="0.5"
+            friction="0.2 0.005 0.0001"/>
+      <inertial pos="0 0 0" mass="0.5" fullinertia="0.001 0.001 0.002 0 0 0"/>
+
+      <body name="lwheel_B" pos="0 0.095 0">
+        <joint name="lw_B" type="hinge" axis="0 1 0" damping="0.02" frictionloss="0.005"/>
+        <geom name="lw_B_tire" type="cylinder" size="0.07 0.0125" euler="1.5708 0 0"
+              material="tire" mass="0.2" friction="1.2 0.005 0.0001"/>
+        <geom name="lw_B_hub"  type="cylinder" size="0.03 0.002"  euler="1.5708 0 0" pos="0 0.013 0"
+              material="hub" contype="0" conaffinity="0" mass="0"/>
+      </body>
+
+      <body name="rwheel_B" pos="0 -0.095 0">
+        <joint name="rw_B" type="hinge" axis="0 1 0" damping="0.02" frictionloss="0.005"/>
+        <geom name="rw_B_tire" type="cylinder" size="0.07 0.0125" euler="1.5708 0 0"
+              material="tire" mass="0.2" friction="1.2 0.005 0.0001"/>
+        <geom name="rw_B_hub"  type="cylinder" size="0.03 0.002"  euler="1.5708 0 0" pos="0 -0.013 0"
+              material="hub" contype="0" conaffinity="0" mass="0"/>
+      </body>
+
+      <body name="neck_B" pos="0 0 0.02">
+        <joint name="neck_B" type="hinge" axis="0 1 0" range="-0.3 0.3" damping="0.1" stiffness="0" springref="0"/>
+        <geom name="neck_B_g" type="cylinder" size="0.008 0.2" pos="0 0 0.2" material="neck_mat" mass="0.1"/>
+        <inertial pos="0 0 0.2" mass="0.1" fullinertia="0.0013 0.0013 0.00001 0 0 0"/>
+        <body name="head_B" pos="0 0 0.4">
+          <geom name="head_B_g" type="box" size="0.05 0.05 0.04" material="head_mat" mass="1.5"/>
+          <geom name="eye_B"    type="box" size="0.001 0.03 0.02" pos="0.051 0 0"
+                material="eye_mat" contype="0" conaffinity="0" mass="0"/>
+          <inertial pos="0 0 0" mass="1.5" fullinertia="0.002 0.002 0.002 0 0 0"/>
+        </body>
+      </body>
+    </body>
+
+  </worldbody>
+
+  <!-- Actuators: 0=lw_A, 1=rw_A, 2=neck_A, 3=lw_B, 4=rw_B, 5=neck_B -->
+  <actuator>
+    <motor    name="lw_A_m"  joint="lw_A"   ctrllimited="true" ctrlrange="-12 12"/>
+    <motor    name="rw_A_m"  joint="rw_A"   ctrllimited="true" ctrlrange="-12 12"/>
+    <position name="nk_A_p"  joint="neck_A" kp="12" ctrllimited="true" ctrlrange="-0.3 0.3"/>
+    <motor    name="lw_B_m"  joint="lw_B"   ctrllimited="true" ctrlrange="-12 12"/>
+    <motor    name="rw_B_m"  joint="rw_B"   ctrllimited="true" ctrlrange="-12 12"/>
+    <position name="nk_B_p"  joint="neck_B" kp="12" ctrllimited="true" ctrlrange="-0.3 0.3"/>
+  </actuator>
+
+  <sensor>
+    <framequat   name="quat_A"   objtype="body" objname="base_A"/>
+    <framelinvel name="lvel_A"   objtype="body" objname="base_A"/>
+    <frameangvel name="avel_A"   objtype="body" objname="base_A"/>
+    <jointpos    name="neck_p_A" joint="neck_A"/>
+    <framequat   name="quat_B"   objtype="body" objname="base_B"/>
+    <framelinvel name="lvel_B"   objtype="body" objname="base_B"/>
+    <frameangvel name="avel_B"   objtype="body" objname="base_B"/>
+    <jointpos    name="neck_p_B" joint="neck_B"/>
+  </sensor>
+
+</mujoco>

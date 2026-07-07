@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    genesis_body.xml — The Body of CARL Genesis
+    A Wall-E style differential drive robot.
+    Low center of mass. Stable. Free to think.
+    
+    The body serves the mind. It does not fight it.
+    
+    Controls:
+        ctrl[0] : left wheels velocity
+        ctrl[1] : right wheels velocity
+        ctrl[2] : neck height (prismatic, position control)
+        ctrl[3] : head pan (hinge, position control)
+    
+    Two bodies: CARL-A and CARL-B
+    Same genetic base, different reservoir initializations.
+    They will develop different personalities.
+-->
+<mujoco model="CARL Genesis">
+
+  <option timestep="0.00417" gravity="0 0 -9.81" iterations="50" solver="Newton"
+          integrator="RK4"/>
+
+  <compiler angle="radian" coordinate="local" inertiafromgeom="true"/>
+
+  <default>
+    <geom contype="1" conaffinity="1" condim="3"
+          friction="0.85 0.005 0.0001"
+          solimp="0.99 0.999 0.001" solref="0.02 1"/>
+    <joint damping="0.05" frictionloss="0.002"/>
+  </default>
+
+  <asset>
+    <!-- Materials -->
+    <material name="floor_mat"   rgba="0.12 0.12 0.16 1.0" reflectance="0.15"/>
+    <material name="wall_mat"    rgba="0.15 0.18 0.35 1.0" specular="0.3"/>
+    <material name="wall_glow"   rgba="0.30 0.45 1.00 0.8" emission="0.6"/>
+    <material name="chassis_mat" rgba="0.85 0.75 0.40 1.0" specular="0.5"/>
+    <material name="wheel_mat"   rgba="0.20 0.20 0.20 1.0" specular="0.1"/>
+    <material name="neck_mat"    rgba="0.70 0.65 0.35 1.0"/>
+    <material name="head_mat"    rgba="0.80 0.72 0.38 1.0" specular="0.4"/>
+    <material name="eye_mat"     rgba="0.20 0.85 0.95 1.0" emission="0.8"/>
+    <material name="food_mat"    rgba="0.20 0.90 0.30 1.0" emission="0.5"/>
+    <material name="goal_mat"    rgba="1.00 0.85 0.10 1.0" emission="0.7"/>
+    <material name="hub_mat"     rgba="0.70 0.70 0.70 1.0" specular="0.8"/>
+
+    <!-- Sky -->
+    <texture name="sky" type="skybox" builtin="gradient"
+             rgb1="0.05 0.05 0.12" rgb2="0.02 0.02 0.06" width="512" height="512"/>
+  </asset>
+
+  <visual>
+    <headlight ambient="0.35 0.35 0.45" diffuse="0.6 0.6 0.7" specular="0.1 0.1 0.1"/>
+    <rgba haze="0.02 0.02 0.04 1"/>
+    <quality shadowsize="2048"/>
+  </visual>
+
+  <worldbody>
+    <!-- Floor -->
+    <geom name="floor" type="plane" size="15 15 0.1"
+          pos="3.6 3.0 0" material="floor_mat" condim="3"/>
+
+    <!-- Ambient light -->
+    <light name="sun" pos="3.6 3.0 8.0" dir="0 0 -1"
+           diffuse="0.5 0.5 0.6" specular="0.2 0.2 0.2" castshadow="true"/>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- MAZE WALLS (same verified layout as Phase 18)                     -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Outer boundary -->
+    <geom name="w_s" type="box" size="3.64 0.04 0.50" pos="3.6  0.0  0.50" material="wall_mat"/>
+    <geom name="w_n" type="box" size="3.64 0.04 0.50" pos="3.6  6.0  0.50" material="wall_mat"/>
+    <geom name="w_w" type="box" size="0.04 3.04 0.50" pos="0.0  3.0  0.50" material="wall_mat"/>
+    <geom name="w_e" type="box" size="0.04 3.04 0.50" pos="7.2  3.0  0.50" material="wall_mat"/>
+
+    <!-- Glow caps on outer walls -->
+    <geom name="wg_s" type="box" size="3.64 0.01 0.004" pos="3.6  0.0  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wg_n" type="box" size="3.64 0.01 0.004" pos="3.6  6.0  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wg_w" type="box" size="0.01 3.04 0.004" pos="0.0  3.0  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wg_e" type="box" size="0.01 3.04 0.004" pos="7.2  3.0  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+
+    <!-- Internal walls -->
+    <geom name="wi0" type="box" size="0.04 0.60 0.50" pos="1.2 0.6  0.50" material="wall_mat"/>
+    <geom name="wi1" type="box" size="1.20 0.04 0.50" pos="1.2 2.4  0.50" material="wall_mat"/>
+    <geom name="wi2" type="box" size="0.04 0.60 0.50" pos="1.2 4.2  0.50" material="wall_mat"/>
+    <geom name="wi3" type="box" size="0.04 1.80 0.50" pos="2.4 3.0  0.50" material="wall_mat"/>
+    <geom name="wi4" type="box" size="0.04 1.20 0.50" pos="3.6 1.2  0.50" material="wall_mat"/>
+    <geom name="wi5" type="box" size="1.20 0.04 0.50" pos="3.6 4.8  0.50" material="wall_mat"/>
+    <geom name="wi6" type="box" size="0.04 1.20 0.50" pos="4.8 2.4  0.50" material="wall_mat"/>
+    <geom name="wi7" type="box" size="1.20 0.04 0.50" pos="4.8 3.6  0.50" material="wall_mat"/>
+    <geom name="wi8" type="box" size="0.60 0.04 0.50" pos="6.6 1.2  0.50" material="wall_mat"/>
+
+    <!-- Internal glow caps -->
+    <geom name="wgi0" type="box" size="0.01 0.60 0.004" pos="1.2 0.6  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wgi1" type="box" size="1.20 0.01 0.004" pos="1.2 2.4  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wgi2" type="box" size="0.01 0.60 0.004" pos="1.2 4.2  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wgi3" type="box" size="0.01 1.80 0.004" pos="2.4 3.0  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wgi4" type="box" size="0.01 1.20 0.004" pos="3.6 1.2  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wgi5" type="box" size="1.20 0.01 0.004" pos="3.6 4.8  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wgi6" type="box" size="0.01 1.20 0.004" pos="4.8 2.4  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wgi7" type="box" size="1.20 0.01 0.004" pos="4.8 3.6  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wgi8" type="box" size="0.60 0.01 0.004" pos="6.6 1.2  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- GOAL BEACON                                                        -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <geom name="goal_sphere" type="sphere"   size="0.18"      pos="5.4 5.4 0.18"
+          material="goal_mat" contype="0" conaffinity="0"/>
+    <geom name="goal_ring"   type="cylinder" size="0.34 0.005" pos="5.4 5.4 0.02"
+          material="goal_mat" contype="0" conaffinity="0"/>
+    <light name="goal_light" pos="5.4 5.4 1.5" dir="0 0 -1"
+           diffuse="0.8 0.7 0.1" specular="0.3 0.3 0.1" castshadow="false"/>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- FOOD PELLETS — 5 scattered sources of energy                      -->
+    <!-- Positions chosen to be in different maze regions                  -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <geom name="food_0" type="sphere" size="0.08" pos="0.6 1.8 0.08"
+          material="food_mat" contype="0" conaffinity="0"/>
+    <geom name="food_1" type="sphere" size="0.08" pos="2.4 0.6 0.08"
+          material="food_mat" contype="0" conaffinity="0"/>
+    <geom name="food_2" type="sphere" size="0.08" pos="3.6 3.0 0.08"
+          material="food_mat" contype="0" conaffinity="0"/>
+    <geom name="food_3" type="sphere" size="0.08" pos="5.4 1.8 0.08"
+          material="food_mat" contype="0" conaffinity="0"/>
+    <geom name="food_4" type="sphere" size="0.08" pos="6.6 4.8 0.08"
+          material="food_mat" contype="0" conaffinity="0"/>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- CARL-A — The first living vessel                                   -->
+    <!-- Wall-E style: wide low stable base, expressive neck and head      -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <body name="base_A" pos="0.60 0.60 0.10">
+      <freejoint name="fj_A"/>
+
+      <!-- Main chassis: wide, low, stable. Center of mass near the ground. -->
+      <geom name="chassis_A" type="box" size="0.10 0.08 0.045"
+            material="chassis_mat" mass="1.2"
+            friction="0.15 0.005 0.0001"/>
+      <inertial pos="0 0 0" mass="1.2" fullinertia="0.003 0.004 0.005 0 0 0"/>
+
+      <!-- Left Front Wheel -->
+      <body name="lfw_A" pos=" 0.07  0.10  -0.02">
+        <joint name="lfw_A_j" type="hinge" axis="0 1 0" damping="0.015" frictionloss="0.003"/>
+        <geom name="lfw_A_g" type="cylinder" size="0.04 0.012"
+              euler="1.5708 0 0" material="wheel_mat" mass="0.15"
+              friction="1.5 0.005 0.0001"/>
+      </body>
+
+      <!-- Left Rear Wheel -->
+      <body name="lrw_A" pos="-0.07  0.10  -0.02">
+        <joint name="lrw_A_j" type="hinge" axis="0 1 0" damping="0.015" frictionloss="0.003"/>
+        <geom name="lrw_A_g" type="cylinder" size="0.04 0.012"
+              euler="1.5708 0 0" material="wheel_mat" mass="0.15"
+              friction="1.5 0.005 0.0001"/>
+      </body>
+
+      <!-- Right Front Wheel -->
+      <body name="rfw_A" pos=" 0.07 -0.10  -0.02">
+        <joint name="rfw_A_j" type="hinge" axis="0 1 0" damping="0.015" frictionloss="0.003"/>
+        <geom name="rfw_A_g" type="cylinder" size="0.04 0.012"
+              euler="1.5708 0 0" material="wheel_mat" mass="0.15"
+              friction="1.5 0.005 0.0001"/>
+      </body>
+
+      <!-- Right Rear Wheel -->
+      <body name="rrw_A" pos="-0.07 -0.10  -0.02">
+        <joint name="rrw_A_j" type="hinge" axis="0 1 0" damping="0.015" frictionloss="0.003"/>
+        <geom name="rrw_A_g" type="cylinder" size="0.04 0.012"
+              euler="1.5708 0 0" material="wheel_mat" mass="0.15"
+              friction="1.5 0.005 0.0001"/>
+      </body>
+
+      <!-- Neck column: prismatic (height) + hinge (pan) -->
+      <!-- This translates internal emotional state into visible posture -->
+      <body name="neck_col_A" pos="0.02 0 0.045">
+        <!-- Prismatic: neck rises and falls with curiosity, fear, grief -->
+        <joint name="neck_lift_A" type="slide" axis="0 0 1"
+               range="0.0 0.28" damping="15.0" stiffness="30.0" springref="0.12"/>
+        <geom name="neck_tube_A" type="cylinder" size="0.014 0.10"
+              pos="0 0 0.10" material="neck_mat" mass="0.08"
+              contype="0" conaffinity="0"/>
+
+        <!-- Head pan body -->
+        <body name="neck_top_A" pos="0 0 0.22">
+          <!-- Pan: head turns toward threats and novelty -->
+          <joint name="head_pan_A" type="hinge" axis="0 0 1"
+                 range="-1.047 1.047" damping="0.1" stiffness="0.0" springref="0.0"/>
+
+          <!-- Head box -->
+          <body name="head_A" pos="0.02 0 0.025">
+            <geom name="head_box_A" type="box" size="0.042 0.038 0.032"
+                  material="head_mat" mass="0.25"
+                  contype="0" conaffinity="0"/>
+            <inertial pos="0 0 0" mass="0.25" fullinertia="0.0003 0.0003 0.0003 0 0 0"/>
+
+            <!-- Eyes: the windows of CARL's soul -->
+            <geom name="eye_L_A" type="sphere" size="0.013" pos="0.041  0.018  0.005"
+                  material="eye_mat" contype="0" conaffinity="0" mass="0"/>
+            <geom name="eye_R_A" type="sphere" size="0.013" pos="0.041 -0.018  0.005"
+                  material="eye_mat" contype="0" conaffinity="0" mass="0"/>
+            <!-- Eye glow rings -->
+            <geom name="eye_ring_L_A" type="cylinder" size="0.015 0.001"
+                  pos="0.042  0.018  0.005" euler="0 1.5708 0"
+                  material="eye_mat" contype="0" conaffinity="0" mass="0"/>
+            <geom name="eye_ring_R_A" type="cylinder" size="0.015 0.001"
+                  pos="0.042 -0.018  0.005" euler="0 1.5708 0"
+                  material="eye_mat" contype="0" conaffinity="0" mass="0"/>
+          </body>
+        </body>
+      </body>
+    </body>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- CARL-B — The second living vessel                                  -->
+    <!-- Same genetics, different position, will develop differently       -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <body name="base_B" pos="0.90 0.60 0.10">
+      <freejoint name="fj_B"/>
+
+      <geom name="chassis_B" type="box" size="0.10 0.08 0.045"
+            material="chassis_mat" mass="1.2"
+            friction="0.15 0.005 0.0001"/>
+      <inertial pos="0 0 0" mass="1.2" fullinertia="0.003 0.004 0.005 0 0 0"/>
+
+      <body name="lfw_B" pos=" 0.07  0.10  -0.02">
+        <joint name="lfw_B_j" type="hinge" axis="0 1 0" damping="0.015" frictionloss="0.003"/>
+        <geom name="lfw_B_g" type="cylinder" size="0.04 0.012"
+              euler="1.5708 0 0" material="wheel_mat" mass="0.15"
+              friction="1.5 0.005 0.0001"/>
+      </body>
+
+      <body name="lrw_B" pos="-0.07  0.10  -0.02">
+        <joint name="lrw_B_j" type="hinge" axis="0 1 0" damping="0.015" frictionloss="0.003"/>
+        <geom name="lrw_B_g" type="cylinder" size="0.04 0.012"
+              euler="1.5708 0 0" material="wheel_mat" mass="0.15"
+              friction="1.5 0.005 0.0001"/>
+      </body>
+
+      <body name="rfw_B" pos=" 0.07 -0.10  -0.02">
+        <joint name="rfw_B_j" type="hinge" axis="0 1 0" damping="0.015" frictionloss="0.003"/>
+        <geom name="rfw_B_g" type="cylinder" size="0.04 0.012"
+              euler="1.5708 0 0" material="wheel_mat" mass="0.15"
+              friction="1.5 0.005 0.0001"/>
+      </body>
+
+      <body name="rrw_B" pos="-0.07 -0.10  -0.02">
+        <joint name="rrw_B_j" type="hinge" axis="0 1 0" damping="0.015" frictionloss="0.003"/>
+        <geom name="rrw_B_g" type="cylinder" size="0.04 0.012"
+              euler="1.5708 0 0" material="wheel_mat" mass="0.15"
+              friction="1.5 0.005 0.0001"/>
+      </body>
+
+      <body name="neck_col_B" pos="0.02 0 0.045">
+        <joint name="neck_lift_B" type="slide" axis="0 0 1"
+               range="0.0 0.28" damping="15.0" stiffness="30.0" springref="0.12"/>
+        <geom name="neck_tube_B" type="cylinder" size="0.014 0.10"
+              pos="0 0 0.10" material="neck_mat" mass="0.08"
+              contype="0" conaffinity="0"/>
+
+        <body name="neck_top_B" pos="0 0 0.22">
+          <joint name="head_pan_B" type="hinge" axis="0 0 1"
+                 range="-1.047 1.047" damping="0.1" stiffness="0.0" springref="0.0"/>
+
+          <body name="head_B" pos="0.02 0 0.025">
+            <geom name="head_box_B" type="box" size="0.042 0.038 0.032"
+                  material="head_mat" mass="0.25"
+                  contype="0" conaffinity="0"/>
+            <inertial pos="0 0 0" mass="0.25" fullinertia="0.0003 0.0003 0.0003 0 0 0"/>
+
+            <geom name="eye_L_B" type="sphere" size="0.013" pos="0.041  0.018  0.005"
+                  material="eye_mat" contype="0" conaffinity="0" mass="0"/>
+            <geom name="eye_R_B" type="sphere" size="0.013" pos="0.041 -0.018  0.005"
+                  material="eye_mat" contype="0" conaffinity="0" mass="0"/>
+            <geom name="eye_ring_L_B" type="cylinder" size="0.015 0.001"
+                  pos="0.042  0.018  0.005" euler="0 1.5708 0"
+                  material="eye_mat" contype="0" conaffinity="0" mass="0"/>
+            <geom name="eye_ring_R_B" type="cylinder" size="0.015 0.001"
+                  pos="0.042 -0.018  0.005" euler="0 1.5708 0"
+                  material="eye_mat" contype="0" conaffinity="0" mass="0"/>
+          </body>
+        </body>
+      </body>
+    </body>
+
+  </worldbody>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- ACTUATORS                                                            -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <actuator>
+    <!-- CARL-A wheels: velocity control -->
+    <velocity name="lw_A"    joint="lfw_A_j" kv="0.5" forcerange="-0.5 0.5" gear="1"/>
+    <velocity name="lw_A_r"  joint="lrw_A_j" kv="0.5" forcerange="-0.5 0.5" gear="1"/>
+    <velocity name="rw_A"    joint="rfw_A_j" kv="0.5" forcerange="-0.5 0.5" gear="1"/>
+    <velocity name="rw_A_r"  joint="rrw_A_j" kv="0.5" forcerange="-0.5 0.5" gear="1"/>
+
+    <!-- CARL-A neck/head: position control -->
+    <position name="neck_A"  joint="neck_lift_A" kp="5.0" gear="1"/>
+    <position name="pan_A"   joint="head_pan_A"  kp="5.0" gear="1"/>
+
+    <!-- CARL-B wheels: velocity control -->
+    <velocity name="lw_B"    joint="lfw_B_j" kv="0.5" forcerange="-0.5 0.5" gear="1"/>
+    <velocity name="lw_B_r"  joint="lrw_B_j" kv="0.5" forcerange="-0.5 0.5" gear="1"/>
+    <velocity name="rw_B"    joint="rfw_B_j" kv="0.5" forcerange="-0.5 0.5" gear="1"/>
+    <velocity name="rw_B_r"  joint="rrw_B_j" kv="0.5" forcerange="-0.5 0.5" gear="1"/>
+
+    <!-- CARL-B neck/head: position control -->
+    <position name="neck_B"  joint="neck_lift_B" kp="5.0" gear="1"/>
+    <position name="pan_B"   joint="head_pan_B"  kp="5.0" gear="1"/>
+  </actuator>
+
+</mujoco>

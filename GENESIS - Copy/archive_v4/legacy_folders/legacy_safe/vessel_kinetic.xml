@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mujoco model="CARL Kinetic">
+  <option timestep="0.01" gravity="0 0 -9.81" solver="Newton" integrator="implicit"/>
+  <compiler angle="radian" coordinate="local" inertiafromgeom="true"/>
+
+  <default>
+    <geom contype="1" conaffinity="1" condim="3" friction="1.2 0.005 0.0001"/>
+    <joint damping="0.15" frictionloss="0.003"/>
+    <position ctrllimited="true" forcelimited="true" forcerange="-2.0 2.0"/>
+    <velocity forcelimited="true" forcerange="-2.5 2.5"/>
+  </default>
+
+  <asset>
+    <material name="matte_shell" rgba="0.90 0.92 0.94 1.0" roughness="0.4"/>
+    <material name="inner_frame" rgba="0.22 0.24 0.28 1.0" roughness="0.5"/>
+    <material name="laser_ring"  rgba="0.00 0.80 1.00 1.0" emission="1.2"/>
+    <material name="wall_mat"      rgba="0.12 0.15 0.18 1.0" roughness="0.9"/>
+    <material name="wall_glow"     rgba="0.05 0.70 0.90 1.0" emission="0.8"/>
+    <material name="food_mat"      rgba="0.20 0.90 0.30 1.0" emission="0.5"/>
+  </asset>
+
+  <worldbody>
+    <light name="studio_sun" pos="2 1 5" dir="-0.3 -0.2 -1" diffuse="0.85 0.85 0.85" castshadow="true"/>
+    <geom name="floor" type="plane" size="12 12 0.1" rgba="0.93 0.94 0.96 1"/>
+
+    <!-- ARENA WALLS -->
+    <geom name="wall_s" type="box" size="5.0 0.05 0.50" pos="0  -5.0  0.50" material="wall_mat"/>
+    <geom name="wall_n" type="box" size="5.0 0.05 0.50" pos="0   5.0  0.50" material="wall_mat"/>
+    <geom name="wall_w" type="box" size="0.05 5.0 0.50" pos="-5.0  0  0.50" material="wall_mat"/>
+    <geom name="wall_e" type="box" size="0.05 5.0 0.50" pos=" 5.0  0  0.50" material="wall_mat"/>
+
+    <!-- Wall glow caps -->
+    <geom name="wg_s" type="box" size="5.0 0.01 0.004" pos="0  -5.0  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wg_n" type="box" size="5.0 0.01 0.004" pos="0   5.0  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wg_w" type="box" size="0.01 5.0 0.004" pos="-5.0  0  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wg_e" type="box" size="0.01 5.0 0.004" pos=" 5.0  0  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+
+    <!-- Centre obstacle -->
+    <geom name="obstacle" type="cylinder" size="0.5 0.45" pos="99 99 0.45" material="wall_mat"/>
+    <geom name="obstacle_glow" type="cylinder" size="0.52 0.004" pos="99 99 0.904" material="wall_glow" contype="0" conaffinity="0"/>
+
+    <!-- Food pellet (respawned dynamically) -->
+    <geom name="food" type="sphere" size="0.12" pos="2.0 2.0 0.12" material="food_mat" contype="0" conaffinity="0"/>
+
+    <body name="drive_deck" pos="0 0 0.04">
+      <freejoint name="spatial_identity"/>
+      <!-- Restored to a stable 0.5kg value to match joint damping vectors -->
+      <geom name="chassis" type="box" size="0.11 0.09 0.012" material="inner_frame" mass="0.5"/>
+
+      <body name="lidar_scanner" pos="0.07 0 0.09">
+        <geom type="cylinder" size="0.024 0.01" material="inner_frame" contype="0" conaffinity="0"/>
+        <geom type="cylinder" size="0.022 0.006" pos="0 0 0.006" material="laser_ring" contype="0" conaffinity="0"/>
+      </body>
+
+      <body name="wheel_L" pos="0.02  0.11 0">
+        <joint name="w_left" type="hinge" axis="0 1 0" damping="0.0" frictionloss="0.0"/>
+        <geom type="cylinder" size="0.04 0.016" euler="1.5708 0 0" material="inner_frame" friction="1.4"/>
+      </body>
+      <body name="wheel_R" pos="0.02 -0.11 0">
+        <joint name="w_right" type="hinge" axis="0 1 0" damping="0.0" frictionloss="0.0"/>
+        <geom type="cylinder" size="0.04 0.016" euler="1.5708 0 0" material="inner_frame" friction="1.4"/>
+      </body>
+      <body name="w_caster" pos="-0.08 0 -0.015">
+        <geom type="sphere" size="0.025" material="matte_shell" friction="0.002"/>
+      </body>
+      <body name="w_caster_front" pos="0.08 0 -0.015">
+        <geom type="sphere" size="0.025" material="matte_shell" friction="0.002"/>
+      </body>
+
+      <body name="swaying_hip" pos="-0.01 0 0.015">
+        <joint name="hip_pitch" type="hinge" axis="0 1 0" range="-0.55 0.55" stiffness="0.5" damping="0.05"/>
+        <joint name="hip_roll"  type="hinge" axis="1 0 0" range="-0.38 0.38" stiffness="0.5" damping="0.05"/>
+        
+        <body name="torso" pos="0 0 0.06">
+          <geom type="box" size="0.05 0.06 0.07" material="matte_shell" mass="0.05" contype="0" conaffinity="0"/>
+
+          <body name="arm_L" pos="0 0.075 0.03">
+            <joint name="shoulder_L" type="hinge" axis="0 1 0" range="-2.0 2.0"/>
+            <geom type="box" size="0.05 0.008 0.012" pos="0.04 0 0" material="inner_frame"/>
+            <geom type="box" size="0.015 0.012 0.018" pos="0.09 0 -0.004" material="matte_shell"/>
+          </body>
+
+          <body name="arm_R" pos="0 -0.075 0.03">
+            <joint name="shoulder_R" type="hinge" axis="0 1 0" range="-2.0 2.0"/>
+            <geom type="box" size="0.05 0.008 0.012" pos="0.04 0 0" material="inner_frame"/>
+            <geom type="box" size="0.015 0.012 0.018" pos="0.09 0 -0.004" material="matte_shell"/>
+          </body>
+
+          <body name="neck_parallel_link" pos="0.01 0 0.07">
+            <joint name="neck_sweep" type="hinge" axis="0 1 0" range="-0.6 0.7" stiffness="0.5" damping="0.1"/>
+            <geom type="box" size="0.01 0.015 0.05" pos="0 0 0.04" material="inner_frame" mass="0.01"/>
+
+            <body name="head" pos="0 0 0.08">
+              <joint name="head_pan" type="hinge" axis="0 0 1" range="-1.4 1.4" damping="0.1"/>
+              <geom type="box" size="0.045 0.045 0.035" material="matte_shell" mass="0.05"/>
+              <geom type="box" size="0.01 0.035 0.015" pos="0.036 0 0" material="inner_frame"/>
+            </body>
+
+          </body>
+        </body>
+      </body>
+
+    </body>
+  </worldbody>
+
+  <actuator>
+    <velocity name="act_w_left"  joint="w_left"  kv="1.0" ctrllimited="true" ctrlrange="-20.0 20.0" forcelimited="true" forcerange="-0.5 0.5"/>
+    <velocity name="act_w_right" joint="w_right" kv="1.0" ctrllimited="true" ctrlrange="-20.0 20.0" forcelimited="true" forcerange="-0.5 0.5"/>
+
+    <position name="act_hip_pitch" joint="hip_pitch" kp="0.5" ctrlrange="-0.55 0.55"/>
+    <position name="act_hip_roll"  joint="hip_roll"  kp="0.5" ctrlrange="-0.38 0.38"/>
+    <position name="act_neck"      joint="neck_sweep" kp="0.1" ctrlrange="-0.6 0.7"/>
+    <position name="act_head"      joint="head_pan"   kp="0.5"  ctrlrange="-1.4 1.4"/>
+    <position name="act_arm_L"     joint="shoulder_L" kp="0.05"  ctrlrange="-2.0 2.0"/>
+    <position name="act_arm_R"     joint="shoulder_R" kp="0.05"  ctrlrange="-2.0 2.0"/>
+  </actuator>
+</mujoco>

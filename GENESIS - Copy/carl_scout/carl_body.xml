@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    carl_body.xml — CARL's Body: A Wall-E Inspired Living Machine
+
+    Design philosophy: Everything serves expression.
+    - Treads for movement (tank-style differential drive)
+    - Telescoping neck for emotional height (curiosity = tall, fear = compressed)
+    - Head tilt for emotional angle (attentive = forward, sad = drooped)
+    - Head pan for directing attention (looks toward stimuli)
+    - Eyelids that open/close (surprise = wide, sleepy = narrow, scared = squint)
+    - Two small arms for reaching, gesturing, self-hugging
+    - Chest cavity with internal "heartbeat" light
+
+    Controls (12 actuators):
+        ctrl[0]  : left tread velocity
+        ctrl[1]  : right tread velocity
+        ctrl[2]  : neck height (prismatic, 0 to 0.20m)
+        ctrl[3]  : head tilt (pitch, -30° to +20°)
+        ctrl[4]  : head pan (yaw, -60° to +60°)
+        ctrl[5]  : left eyelid (0=fully open, 1=fully closed)
+        ctrl[6]  : right eyelid (0=fully open, 1=fully closed)
+        ctrl[7]  : left arm shoulder angle
+        ctrl[8]  : left arm elbow angle
+        ctrl[9]  : right arm shoulder angle
+        ctrl[10] : right arm elbow angle
+        ctrl[11] : heart glow intensity (mapped externally, not a real actuator)
+
+    Emotional expression mapping:
+        Happy/Fed    → neck up, eyes wide, arms relaxed, gentle head bob
+        Curious      → neck stretched tall, head tilted forward, eyes wide, leans toward
+        Scared       → neck compressed, eyes squinting, arms pulled in tight
+        Sad          → neck drooped, head tilted down, eyelids half-closed
+        Excited      → rapid head pans, neck bouncing, arms waving
+        Stressed     → trembling neck, rapid eye blinks, arms hugging self
+        Sleepy       → neck slowly lowering, eyelids closing, arms hanging
+
+    This body does not fight the mind. It reveals it.
+-->
+<mujoco model="CARL Wall-E">
+
+  <option timestep="0.005" gravity="0 0 -9.81" iterations="50" solver="Newton"
+          integrator="RK4"/>
+
+  <compiler angle="radian" coordinate="local" inertiafromgeom="true"/>
+
+  <default>
+    <geom contype="1" conaffinity="1" condim="3"
+          friction="0.8 0.005 0.0001"
+          solimp="0.99 0.999 0.001" solref="0.02 1"/>
+    <joint damping="0.05" frictionloss="0.002"/>
+  </default>
+
+  <asset>
+    <!-- Colours of CARL's soul -->
+    <material name="floor_mat"     rgba="0.10 0.10 0.13 1.0" reflectance="0.12"/>
+    <material name="wall_mat"      rgba="0.15 0.18 0.35 1.0" specular="0.3"/>
+    <material name="wall_glow"     rgba="0.30 0.45 1.00 0.7" emission="0.5"/>
+
+    <!-- Body materials -->
+    <material name="chassis_mat"   rgba="0.82 0.72 0.35 1.0" specular="0.4"/>
+    <material name="tread_mat"     rgba="0.15 0.15 0.15 1.0" specular="0.05"/>
+    <material name="tread_hub_mat" rgba="0.40 0.40 0.40 1.0" specular="0.3"/>
+    <material name="neck_mat"      rgba="0.65 0.60 0.30 1.0" specular="0.2"/>
+    <material name="head_mat"      rgba="0.78 0.68 0.34 1.0" specular="0.5"/>
+    <material name="eye_white_mat" rgba="0.95 0.95 0.98 1.0" specular="0.6"/>
+    <material name="eye_iris_mat"  rgba="0.15 0.75 0.90 1.0" emission="0.9"/>
+    <material name="eyelid_mat"    rgba="0.50 0.45 0.22 1.0" specular="0.2"/>
+    <material name="arm_mat"       rgba="0.70 0.62 0.30 1.0" specular="0.3"/>
+    <material name="claw_mat"      rgba="0.55 0.50 0.25 1.0" specular="0.2"/>
+    <material name="heart_mat"     rgba="1.00 0.40 0.30 1.0" emission="0.8"/>
+    <material name="food_mat"      rgba="0.20 0.90 0.30 1.0" emission="0.5"/>
+
+    <!-- Sky -->
+    <texture name="sky" type="skybox" builtin="gradient"
+             rgb1="0.05 0.05 0.12" rgb2="0.02 0.02 0.06"
+             width="512" height="512"/>
+  </asset>
+
+  <visual>
+    <headlight ambient="0.35 0.35 0.45" diffuse="0.6 0.6 0.7" specular="0.1 0.1 0.1"/>
+    <rgba haze="0.02 0.02 0.04 1"/>
+    <quality shadowsize="2048"/>
+  </visual>
+
+  <worldbody>
+    <!-- Floor -->
+    <geom name="floor" type="plane" size="6 6 0.1"
+          pos="0 0 0" material="floor_mat" condim="3"/>
+
+    <!-- Ambient light -->
+    <light name="sun" pos="0 0 8.0" dir="0 0 -1"
+           diffuse="0.5 0.5 0.6" specular="0.2 0.2 0.2" castshadow="true"/>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- ARENA WALLS — Simple open space for learning                     -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <geom name="wall_s" type="box" size="5.0 0.05 0.50" pos="0  -5.0  0.50" material="wall_mat"/>
+    <geom name="wall_n" type="box" size="5.0 0.05 0.50" pos="0   5.0  0.50" material="wall_mat"/>
+    <geom name="wall_w" type="box" size="0.05 5.0 0.50" pos="-5.0  0  0.50" material="wall_mat"/>
+    <geom name="wall_e" type="box" size="0.05 5.0 0.50" pos=" 5.0  0  0.50" material="wall_mat"/>
+
+    <!-- Wall glow caps -->
+    <geom name="wg_s" type="box" size="5.0 0.01 0.004" pos="0  -5.0  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wg_n" type="box" size="5.0 0.01 0.004" pos="0   5.0  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wg_w" type="box" size="0.01 5.0 0.004" pos="-5.0  0  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+    <geom name="wg_e" type="box" size="0.01 5.0 0.004" pos=" 5.0  0  1.004" material="wall_glow" contype="0" conaffinity="0"/>
+
+    <!-- Centre obstacle -->
+    <geom name="obstacle" type="cylinder" size="0.5 0.45" pos="0 0 0.45"
+          material="wall_mat"/>
+    <geom name="obstacle_glow" type="cylinder" size="0.52 0.004" pos="0 0 0.904"
+          material="wall_glow" contype="0" conaffinity="0"/>
+
+    <!-- Food pellet (respawned dynamically) -->
+    <geom name="food" type="sphere" size="0.12" pos="2.0 2.0 0.12"
+          material="food_mat" contype="0" conaffinity="0"/>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- CARL — The Living Machine                                         -->
+    <!--                                                                    -->
+    <!--  Hierarchy:                                                        -->
+    <!--    base (freejoint)                                                -->
+    <!--      ├── chassis (box)                                             -->
+    <!--      ├── left_tread (hinge)                                        -->
+    <!--      ├── right_tread (hinge)                                       -->
+    <!--      ├── heart_light (sphere, decorative)                          -->
+    <!--      └── neck_column (slide: up/down)                              -->
+    <!--            └── head_pivot (hinge: tilt pitch)                      -->
+    <!--                  └── head_yaw (hinge: pan)                         -->
+    <!--                        └── head_shell (box)                        -->
+    <!--                              ├── left_eye_socket                   -->
+    <!--                              │     ├── eye_white + iris            -->
+    <!--                              │     └── eyelid (hinge)              -->
+    <!--                              ├── right_eye_socket                  -->
+    <!--                              │     ├── eye_white + iris            -->
+    <!--                              │     └── eyelid (hinge)              -->
+    <!--                              ├── left_arm (hinge: shoulder)        -->
+    <!--                              │     └── forearm (hinge: elbow)      -->
+    <!--                              │           └── claw                  -->
+    <!--                              └── right_arm (hinge: shoulder)       -->
+    <!--                                    └── forearm (hinge: elbow)      -->
+    <!--                                          └── claw                  -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+
+    <body name="carl_base" pos="-2.5 -2.5 0.15">
+      <freejoint name="carl_root"/>
+
+      <!-- ── CHASSIS ───────────────────────────────────────────────── -->
+      <!-- Wide, low box. Wall-E's compactor body shape.               -->
+      <geom name="chassis" type="box" size="0.12 0.10 0.06"
+            material="chassis_mat" mass="1.5"
+            friction="0.2 0.005 0.0001"/>
+      <inertial pos="0 0 -0.01" mass="1.5"
+                fullinertia="0.004 0.005 0.006 0 0 0"/>
+
+      <!-- Heart light: glows with emotional intensity -->
+      <geom name="heart_light" type="sphere" size="0.02"
+            pos="0.10 0 0.02" material="heart_mat"
+            contype="0" conaffinity="0" mass="0"/>
+
+      <!-- ── LEFT TREAD ────────────────────────────────────────────── -->
+      <body name="left_tread_body" pos="0 0.11 -0.02">
+        <joint name="left_tread_j" type="hinge" axis="0 1 0"
+               damping="0.02" frictionloss="0.005"/>
+        <!-- Simplified tread as wide cylinder -->
+        <geom name="left_tread" type="cylinder" size="0.05 0.025"
+              euler="1.5708 0 0" material="tread_mat" mass="0.3"
+              friction="1.8 0.005 0.0001"/>
+        <!-- Hub cap -->
+        <geom name="left_hub" type="cylinder" size="0.02 0.001"
+              pos="0 0.026 0" euler="1.5708 0 0" material="tread_hub_mat"
+              contype="0" conaffinity="0" mass="0"/>
+      </body>
+
+      <!-- ── RIGHT TREAD ───────────────────────────────────────────── -->
+      <body name="right_tread_body" pos="0 -0.11 -0.02">
+        <joint name="right_tread_j" type="hinge" axis="0 1 0"
+               damping="0.02" frictionloss="0.005"/>
+        <geom name="right_tread" type="cylinder" size="0.05 0.025"
+              euler="1.5708 0 0" material="tread_mat" mass="0.3"
+              friction="1.8 0.005 0.0001"/>
+        <geom name="right_hub" type="cylinder" size="0.02 0.001"
+              pos="0 -0.026 0" euler="1.5708 0 0" material="tread_hub_mat"
+              contype="0" conaffinity="0" mass="0"/>
+      </body>
+
+      <!-- ── NECK COLUMN ───────────────────────────────────────────── -->
+      <!-- Telescoping neck: rises with curiosity, compresses with fear -->
+      <body name="neck_base" pos="0.02 0 0.06">
+        <joint name="neck_lift" type="slide" axis="0 0 1"
+               range="0.0 0.20" damping="12.0" stiffness="25.0"
+               springref="0.10" armature="0.01"/>
+        <!-- Neck tube visual -->
+        <geom name="neck_tube" type="cylinder" size="0.016 0.07"
+              pos="0 0 0.07" material="neck_mat" mass="0.05"
+              contype="0" conaffinity="0"/>
+
+        <!-- ── HEAD TILT (pitch) ─────────────────────────────────── -->
+        <!-- Nod: tilts forward when curious, droops down when sad   -->
+        <body name="head_tilt_body" pos="0 0 0.16">
+          <joint name="head_tilt" type="hinge" axis="0 1 0"
+                 range="-0.524 0.349" damping="0.15" stiffness="0.5"
+                 springref="0.0" armature="0.01"/>
+          <inertial pos="0 0 0" mass="0.01" fullinertia="0.00001 0.00001 0.00001 0 0 0"/>
+
+          <!-- ── HEAD PAN (yaw) ────────────────────────────────── -->
+          <!-- Look left/right: turns toward stimuli/threats        -->
+          <body name="head_pan_body" pos="0 0 0.01">
+            <joint name="head_pan" type="hinge" axis="0 0 1"
+                   range="-1.047 1.047" damping="0.12" stiffness="0.0"
+                   springref="0.0" armature="0.01"/>
+            <inertial pos="0 0 0" mass="0.01" fullinertia="0.00001 0.00001 0.00001 0 0 0"/>
+
+            <!-- ── HEAD SHELL ──────────────────────────────────── -->
+            <!-- The face. Wall-E's binocular-shaped head.         -->
+            <body name="head" pos="0.02 0 0.02">
+              <geom name="head_shell" type="box" size="0.048 0.042 0.036"
+                    material="head_mat" mass="0.20"
+                    contype="0" conaffinity="0"/>
+              <inertial pos="0 0 0" mass="0.20"
+                        fullinertia="0.0002 0.0002 0.0002 0 0 0"/>
+
+              <!-- ── LEFT EYE ────────────────────────────────── -->
+              <body name="left_eye_socket" pos="0.045 0.022 0.005">
+                <!-- Eye white (always visible) -->
+                <geom name="eye_white_L" type="cylinder" size="0.018 0.003"
+                      euler="0 1.5708 0" material="eye_white_mat"
+                      contype="0" conaffinity="0" mass="0"/>
+                <!-- Iris/pupil (glowing cyan) -->
+                <geom name="eye_iris_L" type="sphere" size="0.010"
+                      pos="0.003 0 0" material="eye_iris_mat"
+                      contype="0" conaffinity="0" mass="0"/>
+
+                <!-- Eyelid: rotates down to close the eye -->
+                <body name="left_eyelid_body" pos="0 0 0.015">
+                  <joint name="left_eyelid" type="hinge" axis="0 1 0"
+                         range="0.0 1.3" damping="0.05" stiffness="0.3"
+                         springref="0.0" armature="0.01"/>
+                  <inertial pos="0 0 0" mass="0.005" fullinertia="0.000001 0.000001 0.000001 0 0 0"/>
+                  <geom name="left_eyelid" type="box" size="0.004 0.019 0.012"
+                        pos="0 0 -0.005" material="eyelid_mat"
+                        contype="0" conaffinity="0" mass="0.005"/>
+                </body>
+              </body>
+
+              <!-- ── RIGHT EYE ───────────────────────────────── -->
+              <body name="right_eye_socket" pos="0.045 -0.022 0.005">
+                <geom name="eye_white_R" type="cylinder" size="0.018 0.003"
+                      euler="0 1.5708 0" material="eye_white_mat"
+                      contype="0" conaffinity="0" mass="0"/>
+                <geom name="eye_iris_R" type="sphere" size="0.010"
+                      pos="0.003 0 0" material="eye_iris_mat"
+                      contype="0" conaffinity="0" mass="0"/>
+
+                <body name="right_eyelid_body" pos="0 0 0.015">
+                  <joint name="right_eyelid" type="hinge" axis="0 1 0"
+                         range="0.0 1.3" damping="0.05" stiffness="0.3"
+                         springref="0.0" armature="0.01"/>
+                  <inertial pos="0 0 0" mass="0.005" fullinertia="0.000001 0.000001 0.000001 0 0 0"/>
+                  <geom name="right_eyelid" type="box" size="0.004 0.019 0.012"
+                        pos="0 0 -0.005" material="eyelid_mat"
+                        contype="0" conaffinity="0" mass="0.005"/>
+                </body>
+              </body>
+
+              <!-- ── LEFT ARM ────────────────────────────────── -->
+              <!-- Small stubby arms, Wall-E style                -->
+              <body name="left_arm_shoulder" pos="-0.02 0.048 -0.01">
+                <inertial pos="0 0 0" mass="0.03" fullinertia="0.00001 0.00001 0.00001 0 0 0"/>
+                <joint name="left_shoulder" type="hinge" axis="0 1 0"
+                       range="-1.57 1.57" damping="0.08" stiffness="0.2"
+                       springref="0.3" armature="0.01"/>
+                <!-- Upper arm -->
+                <geom name="left_upper_arm" type="capsule"
+                      fromto="0 0 0  0 0.04 -0.04" size="0.008"
+                      material="arm_mat" mass="0.03" contype="0" conaffinity="0"/>
+
+                <!-- Forearm + elbow -->
+                <body name="left_forearm_body" pos="0 0.04 -0.04">
+                  <inertial pos="0 0 0" mass="0.03" fullinertia="0.00001 0.00001 0.00001 0 0 0"/>
+                  <joint name="left_elbow" type="hinge" axis="0 1 0"
+                         range="-2.0 0.5" damping="0.5" stiffness="0.1"
+                         springref="-0.5" armature="0.01"/>
+                  <geom name="left_forearm" type="capsule"
+                        fromto="0 0 0  0 0.02 -0.035" size="0.007"
+                        material="arm_mat" mass="0.03" contype="0" conaffinity="0"/>
+                </body>
+              </body>
+
+              <!-- ── RIGHT ARM ───────────────────────────────── -->
+              <body name="right_arm_shoulder" pos="-0.02 -0.048 -0.01">
+                <inertial pos="0 0 0" mass="0.03" fullinertia="0.00001 0.00001 0.00001 0 0 0"/>
+                <joint name="right_shoulder" type="hinge" axis="0 1 0"
+                       range="-1.57 1.57" damping="0.08" stiffness="0.2"
+                       springref="0.3" armature="0.01"/>
+                <geom name="right_upper_arm" type="capsule"
+                      fromto="0 0 0  0 -0.04 -0.04" size="0.008"
+                      material="arm_mat" mass="0.03" contype="0" conaffinity="0"/>
+
+                <body name="right_forearm_body" pos="0 -0.04 -0.04">
+                  <inertial pos="0 0 0" mass="0.03" fullinertia="0.00001 0.00001 0.00001 0 0 0"/>
+                  <joint name="right_elbow" type="hinge" axis="0 1 0"
+                         range="-2.0 0.5" damping="0.5" stiffness="0.1"
+                         springref="-0.5" armature="0.01"/>
+                  <geom name="right_forearm" type="capsule"
+                        fromto="0 0 0  0 -0.02 -0.035" size="0.007"
+                        material="arm_mat" mass="0.03" contype="0" conaffinity="0"/>
+                </body>
+              </body>
+
+            </body> <!-- head -->
+          </body> <!-- head_pan_body -->
+        </body> <!-- head_tilt_body -->
+      </body> <!-- neck_base -->
+    </body> <!-- carl_base -->
+
+  </worldbody>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- ACTUATORS — How the mind speaks through the body                    -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <actuator>
+    <!-- LOCOMOTION: differential drive (tank steering) -->
+    <velocity name="left_tread"   joint="left_tread_j"  kv="2.0" forcerange="-5.0 5.0" gear="5"/>
+    <velocity name="right_tread"  joint="right_tread_j" kv="2.0" forcerange="-5.0 5.0" gear="5"/>
+
+    <!-- EXPRESSION: neck and head -->
+    <position name="neck_height"  joint="neck_lift"     kp="2.0" gear="1"/>
+    <position name="head_pitch"   joint="head_tilt"     kp="0.5" gear="1"/>
+    <position name="head_yaw"     joint="head_pan"      kp="0.5" gear="1"/>
+
+    <!-- EXPRESSION: eyelids (0=open, 1.3=closed) -->
+    <position name="eyelid_L"     joint="left_eyelid"   kp="0.01" gear="1"/>
+    <position name="eyelid_R"     joint="right_eyelid"  kp="0.01" gear="1"/>
+
+    <!-- EXPRESSION: arms -->
+    <position name="shoulder_L"   joint="left_shoulder"  kp="0.05" gear="1"/>
+    <position name="elbow_L"      joint="left_elbow"     kp="0.02" gear="1"/>
+    <position name="shoulder_R"   joint="right_shoulder"  kp="0.05" gear="1"/>
+    <position name="elbow_R"      joint="right_elbow"     kp="0.02" gear="1"/>
+  </actuator>
+
+</mujoco>

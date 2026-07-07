@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CARL — The Maze</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+  --bg:     #04050a;
+  --panel:  rgba(8,10,18,0.92);
+  --border: rgba(30,120,255,0.18);
+  --cyan:   #00e5ff;
+  --blue:   #1e78ff;
+  --red:    #ff2d55;
+  --amber:  #ffb800;
+  --green:  #00ff88;
+  --purple: #bf5fff;
+  --fuchsia:#ff3aff;
+  --dim:    #4a5568;
+  --text:   #c8d8f0;
+  --mono:   'Space Mono', monospace;
+  --sans:   'Syne', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 1rem 1.2rem;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 30%, rgba(0,100,255,0.06), transparent),
+    radial-gradient(ellipse 50% 60% at 80% 70%, rgba(191,95,255,0.05), transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* scanline overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.08) 2px,
+    rgba(0,0,0,0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+* { position: relative; z-index: 2; }
+
+/* ── HEADER ── */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.8rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.8rem;
+}
+
+.title-block { display: flex; flex-direction: column; gap: 2px; }
+.title {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, var(--cyan), var(--blue) 50%, var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.subtitle {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--dim);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+.conn-badge {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 0.65rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: rgba(0,229,255,0.04);
+}
+.conn-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); }
+.conn-dot.live { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+/* ── MODE BANNER ── */
+#banner {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 0.5rem;
+  margin-bottom: 0.8rem;
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+#banner.fearful  { border-color: var(--red);   color: var(--red);   animation: pulse-red 0.5s infinite alternate; }
+#banner.grieving { border-color: var(--purple); color: var(--purple);}
+#banner.curious  { border-color: var(--amber);  color: var(--amber); }
+#banner.sleeping { border-color: var(--fuchsia);color: var(--fuchsia); animation: pulse-mag 1s infinite alternate;}
+#banner.dead     { border-color: var(--dim);    color: var(--dim);   }
+
+@keyframes pulse-red { from { box-shadow: none; } to { box-shadow: 0 0 20px rgba(255,45,85,0.4); } }
+@keyframes pulse-mag { from { box-shadow: none; } to { box-shadow: 0 0 25px rgba(255,58,255,0.4); } }
+
+/* ── LAYOUT ── */
+.grid {
+  display: grid;
+  grid-template-columns: 260px 1fr 1fr 240px;
+  gap: 0.8rem;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  backdrop-filter: blur(12px);
+}
+
+.ptitle {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--dim);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.8rem;
+}
+.ptitle span { float: right; color: var(--blue); }
+
+/* ── BARS ── */
+.bar-row { margin-bottom: 0.7rem; }
+.bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  margin-bottom: 0.2rem;
+  color: var(--text);
+}
+.bar-track {
+  height: 8px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+.b-da   { background: linear-gradient(90deg, #a05000, var(--amber)); }
+.b-5ht  { background: linear-gradient(90deg, #006040, var(--green)); }
+.b-ne   { background: linear-gradient(90deg, #800020, var(--red)); }
+.b-ach  { background: linear-gradient(90deg, #4020a0, var(--purple)); }
+.b-allo { background: linear-gradient(90deg, #303040, #8090b0); }
+.b-cyan { background: linear-gradient(90deg, #004060, var(--cyan)); }
+.b-fuch { background: linear-gradient(90deg, #600060, var(--fuchsia)); }
+
+/* ── STATS GRID ── */
+.sgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+.stat {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.6rem;
+  text-align: center;
+}
+.sval {
+  font-family: var(--mono);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+.slbl {
+  font-size: 0.5rem;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 0.3rem;
+}
+
+/* ── TELEMETRY ROWS ── */
+.tel-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.tel-lbl { font-size: 0.6rem; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
+.tel-val { font-family: var(--mono); font-size: 0.8rem; color: #fff; font-weight: 700; }
+
+/* ── 2D COGNITIVE MAP ── */
+#cogmap-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.5;
+  margin-bottom: 0.8rem;
+}
+#cogmap {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  image-rendering: pixelated;
+}
+
+/* ── DANGER MAP (pitch/vel) ── */
+#heatmap {
+  width: 100%;
+  height: 160px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  image-rendering: pixelated;
+}
+
+/* ── CHART ── */
+.chart-wrap { height: 160px; margin-bottom: 0.8rem; }
+
+/* ── SWARM BODIES ── */
+.bodies {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  max-height: 500px;
+  overflow-y: auto;
+}
+.bodies::-webkit-scrollbar { width: 3px; }
+.bodies::-webkit-scrollbar-thumb { background: rgba(0,229,255,0.3); }
+
+.body-card {
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(0,229,255,0.15);
+  border-radius: 6px;
+  padding: 0.5rem;
+  border-left: 3px solid var(--cyan);
+  transition: opacity 0.3s;
+}
+.body-card.sleeping {
+  border-left-color: var(--fuchsia);
+  opacity: 0.6;
+}
+.body-title {
+  font-family: var(--mono);
+  font-size: 0.5rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 0.2rem;
+}
+.body-card.sleeping .body-title { color: var(--fuchsia); }
+.body-sv {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+.body-sv.sleeping { color: var(--fuchsia); animation: pulse-mag 2s infinite alternate; }
+.body-info { font-family: var(--mono); font-size: 0.58rem; color: #8090a0; margin-top: 0.3rem; }
+
+/* ── VISUAL CORTEX ── */
+.v-cortex {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  margin-top: 0.4rem;
+}
+.v-neuron {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: opacity 0.1s;
+  opacity: 0.1;
+}
+.v-prox { background: var(--red); box-shadow: 0 0 8px var(--red); }
+.v-void { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+.v-loom { background: var(--fuchsia); box-shadow: 0 0 8px var(--fuchsia); }
+
+/* ── ENV CHIPS ── */
+.env-strip { display: flex; gap: 0.5rem; margin-bottom: 0.8rem; }
+.env-chip {
+  flex: 1;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0.4rem;
+  border-radius: 4px;
+  border: 1px solid;
+  transition: all 0.3s;
+}
+.ec-stage  { border-color: rgba(0,229,255,0.3); color: var(--cyan); }
+.ec-wind   { border-color: rgba(255,45,85,0.3); color: var(--red); }
+.ec-wind.on { background: rgba(255,45,85,0.15); border-color: var(--red); }
+.ec-quake  { border-color: rgba(255,184,0,0.3); color: var(--amber); }
+.ec-quake.on { background: rgba(255,184,0,0.15); border-color: var(--amber); }
+
+/* ── GOAL INDICATOR ── */
+.goal-box {
+  background: rgba(255,45,80,0.08);
+  border: 1px solid rgba(255,45,80,0.3);
+  border-radius: 6px;
+  padding: 0.6rem;
+  text-align: center;
+  margin-bottom: 0.8rem;
+}
+.goal-coords {
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--fuchsia);
+}
+.goal-lbl {
+  font-size: 0.52rem;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+/* ── LEGEND ── */
+.legend {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--dim);
+  margin-bottom: 0.5rem;
+}
+.ld { width: 14px; height: 3px; border-radius: 2px; display: inline-block; margin-right: 4px; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-block">
+    <div class="title">CARL</div>
+    <div class="subtitle">Phase 16 — Artificial Life · Embodied Metabolism · Sensorimotor STDP</div>
+  </div>
+  <div class="conn-badge">
+    <div class="conn-dot" id="dot"></div>
+    <span id="ctext">CONNECTING...</span>
+  </div>
+</header>
+
+<div id="banner">BOOTING...</div>
+
+<div class="grid">
+
+  <!-- COL 1: Endocrine + Biology -->
+  <div class="panel">
+    <div class="ptitle">Endocrine Engine</div>
+    <div class="bar-row">
+      <div class="bar-label"><span>DA — Dopamine</span><span id="v-da" style="color:var(--amber)">0.50</span></div>
+      <div class="bar-track"><div class="bar-fill b-da" id="b-da" style="width:50%"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span>5HT — Serotonin</span><span id="v-5ht" style="color:var(--green)">0.60</span></div>
+      <div class="bar-track"><div class="bar-fill b-5ht" id="b-5ht" style="width:60%"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span>NE — Norepinephrine</span><span id="v-ne" style="color:var(--red)">0.20</span></div>
+      <div class="bar-track"><div class="bar-fill b-ne" id="b-ne" style="width:20%"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span>ACh — Acetylcholine</span><span id="v-ach" style="color:var(--purple)">0.40</span></div>
+      <div class="bar-track"><div class="bar-fill b-ach" id="b-ach" style="width:40%"></div></div>
+    </div>
+
+    <div class="ptitle" style="margin-top:1rem;">Allostatic Core</div>
+    <div class="bar-row">
+      <div class="bar-label"><span>Allostatic Load</span><span id="v-allo">0.00</span></div>
+      <div class="bar-track"><div class="bar-fill b-allo" id="b-allo" style="width:0%"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span>Social Comfort</span><span id="v-social" style="color:var(--fuchsia)">1.00</span></div>
+      <div class="bar-track"><div class="bar-fill b-fuch" id="b-social" style="width:100%"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span>Pred. Precision</span><span id="v-prec" style="color:var(--cyan)">0.50</span></div>
+      <div class="bar-track"><div class="bar-fill b-cyan" id="b-prec" style="width:50%"></div></div>
+    </div>
+
+    <div class="ptitle" style="margin-top:1rem;">Biological States</div>
+    <div class="tel-row">
+      <span class="tel-lbl">Sleep Phase</span>
+      <span class="tel-val" id="tel-sleep" style="color:var(--fuchsia)">AWAKE</span>
+    </div>
+    <div class="tel-row">
+      <span class="tel-lbl">Hebbian Strength</span>
+      <span class="tel-val" id="tel-hebb" style="color:var(--amber)">0.000</span>
+    </div>
+    <div class="tel-row">
+      <span class="tel-lbl">REM Dreams</span>
+      <span class="tel-val" id="tel-rem" style="color:var(--purple)">0</span>
+    </div>
+    <div class="tel-row">
+      <span class="tel-lbl">Mourning Events</span>
+      <span class="tel-val" id="tel-mourn" style="color:var(--red)">0</span>
+    </div>
+    <div class="tel-row" style="border-bottom:none;">
+      <span class="tel-lbl">Junction Decisions</span>
+      <span class="tel-val" id="tel-junc" style="color:var(--green)">0</span>
+    </div>
+
+    <div class="ptitle" style="margin-top:1rem;">Visual Cortex (Body 1 POV)</div>
+    <div style="font-size:0.55rem; color:var(--dim); font-family:var(--mono); margin-top:0.4rem; display:flex; justify-content:space-between;">
+      <span>PROXIMITY</span><span style="color:var(--red)">RED</span>
+    </div>
+    <div class="v-cortex" id="vc-prox">
+      <div class="v-neuron v-prox"></div><div class="v-neuron v-prox"></div>
+      <div class="v-neuron v-prox"></div><div class="v-neuron v-prox"></div>
+      <div class="v-neuron v-prox"></div>
+    </div>
+    <div style="font-size:0.55rem; color:var(--dim); font-family:var(--mono); margin-top:0.6rem; display:flex; justify-content:space-between;">
+      <span>VOID</span><span style="color:var(--cyan)">CYAN</span>
+    </div>
+    <div class="v-cortex" id="vc-void">
+      <div class="v-neuron v-void"></div><div class="v-neuron v-void"></div>
+      <div class="v-neuron v-void"></div><div class="v-neuron v-void"></div>
+      <div class="v-neuron v-void"></div>
+    </div>
+    <div style="font-size:0.55rem; color:var(--dim); font-family:var(--mono); margin-top:0.6rem; display:flex; justify-content:space-between;">
+      <span>LOOMING (FLOW)</span><span style="color:var(--fuchsia)">MAGENTA</span>
+    </div>
+    <div class="v-cortex" id="vc-loom">
+      <div class="v-neuron v-loom"></div><div class="v-neuron v-loom"></div>
+      <div class="v-neuron v-loom"></div><div class="v-neuron v-loom"></div>
+      <div class="v-neuron v-loom"></div>
+    </div>
+  </div>
+
+  <!-- COL 2: Cognitive Map + Danger Map -->
+  <div class="panel">
+    <div class="ptitle">2D Spatial Cognitive Map <span>Maze Awareness</span></div>
+    <div id="cogmap-wrap">
+      <canvas id="cogmap" width="25" height="25"></canvas>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:0.52rem;color:var(--dim);margin-top:0.3rem;margin-bottom:0.8rem;">
+      <span>X: -1.5m</span><span>Goal shown in pink</span><span>7.5m</span>
+    </div>
+
+    <div class="ptitle">Kinematic Danger Map <span>Pitch × Velocity</span></div>
+    <canvas id="heatmap" width="20" height="20"></canvas>
+    <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:0.52rem;color:var(--dim);margin-top:0.3rem;">
+      <span>-0.65 pitch</span><span>0</span><span>+0.65</span>
+    </div>
+
+    <div class="ptitle" style="margin-top:0.8rem;">Dual Surprise Streams</div>
+    <div class="legend">
+      <span><div class="ld" style="background:var(--cyan)"></div>WM Surprise</span>
+      <span><div class="ld" style="background:var(--purple)"></div>LTM Surprise</span>
+    </div>
+    <div class="chart-wrap"><canvas id="chart"></canvas></div>
+  </div>
+
+  <!-- COL 3: Environment + Stats -->
+  <div class="panel">
+    <div class="sgrid">
+      <div class="stat"><div class="sval" id="s-ep">0</div><div class="slbl">Episode</div></div>
+      <div class="stat"><div class="sval" id="s-best" style="color:var(--amber)">0.0s</div><div class="slbl">Best Survival</div></div>
+      <div class="stat"><div class="sval" id="s-dist" style="color:var(--cyan)">—</div><div class="slbl">Best Distance</div></div>
+      <div class="stat"><div class="sval" id="s-reach" style="color:var(--green)">0</div><div class="slbl">Goal Reached</div></div>
+    </div>
+
+    <div class="goal-box">
+      <div class="goal-lbl">Current Goal Position</div>
+      <div class="goal-coords" id="goal-coords">(4.8, 2.4)</div>
+      <div class="goal-lbl" style="margin-top:0.2rem;">Moves every 200 episodes</div>
+    </div>
+
+    <div class="env-strip">
+      <div class="env-chip ec-stage" id="ec-stage">STAGE<br>1</div>
+      <div class="env-chip ec-wind"  id="ec-wind">WIND<br>OFF</div>
+      <div class="env-chip ec-quake" id="ec-quake">QUAKE<br>0.00</div>
+    </div>
+
+    <div class="ptitle">LTM Confidence</div>
+    <div class="bar-row">
+      <div class="bar-label"><span>Long-Term Memory</span><span id="v-ltm" style="color:var(--cyan)">0%</span></div>
+      <div class="bar-track"><div class="bar-fill b-cyan" id="b-ltm" style="width:0%"></div></div>
+    </div>
+
+    <div class="ptitle" style="margin-top:0.8rem;">Surprise History</div>
+    <div class="chart-wrap" style="height:140px;"><canvas id="chart2"></canvas></div>
+
+    <div class="ptitle" style="margin-top:0.8rem;">Swarm Telemetry</div>
+    <div class="tel-row">
+      <span class="tel-lbl">Alive</span>
+      <span class="tel-val" id="tel-alive" style="color:var(--green)">10/10</span>
+    </div>
+    <div class="tel-row">
+      <span class="tel-lbl">Ghost Count</span>
+      <span class="tel-val" id="tel-ghosts" style="color:var(--red)">0</span>
+    </div>
+    <div class="tel-row" style="border-bottom:none;">
+      <span class="tel-lbl">Homeostatic Error</span>
+      <span class="tel-val" id="tel-homeo" style="color:var(--amber)">0.00</span>
+    </div>
+  </div>
+
+  <!-- COL 4: Body Cards -->
+  <div class="panel">
+    <div class="ptitle">Swarm Intelligence <span>10 Bodies</span></div>
+    <div class="bodies" id="swarm-bodies"></div>
+  </div>
+
+</div>
+
+<script>
+const N = 120;
+
+// Surprise chart
+const ctx = document.getElementById('chart').getContext('2d');
+const g1 = ctx.createLinearGradient(0,0,0,160);
+g1.addColorStop(0,'rgba(0,229,255,0.35)'); g1.addColorStop(1,'rgba(0,229,255,0)');
+const g2 = ctx.createLinearGradient(0,0,0,160);
+g2.addColorStop(0,'rgba(191,95,255,0.35)'); g2.addColorStop(1,'rgba(191,95,255,0)');
+
+Chart.defaults.color = '#4a5568';
+Chart.defaults.font.family = "'Space Mono', monospace";
+Chart.defaults.font.size   = 10;
+
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: { labels: Array(N).fill(''), datasets: [
+    { data: Array(N).fill(0), borderColor:'#00e5ff', backgroundColor:g1, borderWidth:1.5, pointRadius:0, fill:true, tension:0.4 },
+    { data: Array(N).fill(0), borderColor:'#bf5fff', backgroundColor:g2, borderWidth:1.5, pointRadius:0, fill:true, tension:0.4 },
+  ]},
+  options: {
+    responsive:true, maintainAspectRatio:false, animation:false,
+    plugins:{ legend:{ display:false } },
+    scales:{
+      x:{ display:false },
+      y:{ grid:{ color:'rgba(255,255,255,0.04)' }, min:0, suggestedMax:0.4 }
+    }
+  }
+});
+
+// Episode survival chart
+const ctx2 = document.getElementById('chart2').getContext('2d');
+const g3   = ctx2.createLinearGradient(0,0,0,140);
+g3.addColorStop(0,'rgba(255,184,0,0.3)'); g3.addColorStop(1,'rgba(255,184,0,0)');
+const chart2 = new Chart(ctx2, {
+  type:'line',
+  data:{ labels:[], datasets:[{
+    label:'Survival', data:[], borderColor:'#ffb800',
+    backgroundColor:g3, borderWidth:1.5, pointRadius:0, fill:true, tension:0.4
+  }]},
+  options:{
+    responsive:true, maintainAspectRatio:false, animation:false,
+    plugins:{ legend:{display:false} },
+    scales:{
+      x:{ display:false },
+      y:{ grid:{ color:'rgba(255,255,255,0.04)' }, min:0 }
+    }
+  }
+});
+
+// Cognitive map (25x25)
+const cmCanvas = document.getElementById('cogmap');
+const cmCtx    = cmCanvas.getContext('2d');
+
+function drawCogMap(flat, scentFlat, goalX, goalY, astarPath) {
+  const img = cmCtx.createImageData(25, 25);
+  flat.forEach((v, idx) => {
+    const danger = Math.min(255, Math.round(v * 350));
+    const scent = Math.min(255, Math.round((scentFlat ? scentFlat[idx] : 0) * 255));
+    
+    // Danger is red, Scent is green/yellow (diffusion algae)
+    img.data[idx*4+0] = Math.max(danger, scent * 0.8);
+    img.data[idx*4+1] = Math.max(Math.round(danger * 0.1), scent);
+    img.data[idx*4+2] = Math.max(Math.round(danger * 0.05), Math.round(scent * 0.2));
+    img.data[idx*4+3] = 255;
+  });
+  cmCtx.putImageData(img, 0, 0);
+
+  const MAP_XMIN=-1.5, MAP_XMAX=7.5, MAP_YMIN=-1.5, MAP_YMAX=5.0;
+
+  // Draw A* path (the yellow line)
+  if (astarPath && astarPath.length > 0) {
+    cmCtx.beginPath();
+    cmCtx.strokeStyle = '#ffb800'; // Amber/Yellow
+    cmCtx.lineWidth = 1;
+    astarPath.forEach((pt, i) => {
+      const px = (pt[0]-MAP_XMIN)/(MAP_XMAX-MAP_XMIN)*25;
+      const py = (pt[1]-MAP_YMIN)/(MAP_YMAX-MAP_YMIN)*25;
+      if (i===0) cmCtx.moveTo(px, py);
+      else cmCtx.lineTo(px, py);
+    });
+    cmCtx.stroke();
+  }
+
+  // Draw goal dot
+  const gi = Math.round((goalX-MAP_XMIN)/(MAP_XMAX-MAP_XMIN)*25);
+  const gj = Math.round((goalY-MAP_YMIN)/(MAP_YMAX-MAP_YMIN)*25);
+  cmCtx.fillStyle = '#ff3aff';
+  cmCtx.fillRect(Math.max(0,gi-1), Math.max(0,gj-1), 3, 3);
+}
+
+// Danger heatmap (20x20)
+const hc    = document.getElementById('heatmap');
+const hctx  = hc.getContext('2d');
+function drawHeat(flat) {
+  const img = hctx.createImageData(20,20);
+  flat.forEach((v,i) => {
+    const intensity = Math.min(255, Math.round(v*380));
+    img.data[i*4+0] = intensity;
+    img.data[i*4+1] = Math.round(v<0.5?0:(v-0.5)*60);
+    img.data[i*4+2] = Math.round(intensity*0.05);
+    img.data[i*4+3] = 255;
+  });
+  hctx.putImageData(img,0,0);
+}
+
+const $ = id => document.getElementById(id);
+const pct = v => Math.round(Math.min(1,Math.max(0,v))*100)+'%';
+
+function setMode(m, sleeping, adr) {
+  const b = $('banner');
+  if (sleeping) { b.textContent='SLEEPING — DREAMS & TRAUMA REPLAY'; b.className='sleeping'; return; }
+  if (adr)      { b.textContent='[ADRENALINE SPIKE] — NE MAXED';    b.className='fearful'; return; }
+  b.textContent = m;
+  if (m.includes('FEARFUL'))    b.className='fearful';
+  else if (m.includes('GRIEV')) b.className='grieving';
+  else if (m.includes('CURIO')) b.className='curious';
+  else if (m==='DEAD')          b.className='dead';
+  else                          b.className='';
+}
+
+let swarmReady = false;
+function renderSwarm(d) {
+  if (!d.energies) return;
+  const c = $('swarm-bodies');
+  if (!swarmReady || c.children.length !== d.energies.length) {
+    c.innerHTML = '';
+    d.energies.forEach((_, i) => {
+      const div = document.createElement('div');
+      div.className = 'body-card';
+      div.id = `bc-${i}`;
+      div.innerHTML = `
+        <div class="body-title">Body ${i+1}</div>
+        <div class="bar-row">
+          <div class="bar-label"><span>Energy</span><span id="sv-${i}" style="color:var(--cyan)">100%</span></div>
+          <div class="bar-track"><div class="bar-fill b-cyan" id="en-${i}" style="width:100%"></div></div>
+        </div>
+        <div class="body-info" style="margin-top:0.6rem;">
+          PITCH: <span id="pt-${i}" style="color:var(--amber)">0.000</span><br>
+          DIST:  <span id="dt-${i}" style="color:var(--cyan)">—</span>
+        </div>`;
+      c.appendChild(div);
+    });
+    swarmReady = true;
+  }
+  d.energies.forEach((en, i) => {
+    const card = $(`bc-${i}`);
+    const svEl = $(`sv-${i}`);
+    const enBar = $(`en-${i}`);
+    if (d.sleeping_flags[i]) { 
+        card.classList.add('sleeping'); 
+        svEl.textContent = 'SLEEPING';
+        svEl.style.color = 'var(--fuchsia)';
+        enBar.className = 'bar-fill b-fuch';
+    } else { 
+        card.classList.remove('sleeping'); 
+        svEl.textContent = en.toFixed(0)+'%';
+        svEl.style.color = 'var(--cyan)';
+        enBar.className = 'bar-fill b-cyan';
+    }
+    enBar.style.width = Math.min(100, Math.max(0, en)) + '%';
+    $(`pt-${i}`).textContent = (d.pitches[i]||0).toFixed(3);
+    const dist = d.distances[i];
+    $(`dt-${i}`).textContent = dist < 90 ? dist.toFixed(2)+'m' : '—';
+  });
+}
+
+function renderVisualCortex(d) {
+  if (!d.v_pop || d.v_pop.length !== 15) return;
+  const proxNodes = document.getElementById('vc-prox').children;
+  const voidNodes = document.getElementById('vc-void').children;
+  const loomNodes = document.getElementById('vc-loom').children;
+  
+  for(let i=0; i<5; i++) {
+    proxNodes[i].style.opacity = Math.max(0.1, d.v_pop[i]);
+    voidNodes[i].style.opacity = Math.max(0.1, d.v_pop[i+5]);
+    loomNodes[i].style.opacity = Math.max(0.1, d.v_pop[i+10]);
+  }
+}
+
+function connect() {
+  const ws = new WebSocket('ws://localhost:8765');
+  ws.onopen  = () => {
+    $('dot').classList.add('live');
+    $('ctext').textContent='BRAIN SYNCED · 30Hz';
+    $('ctext').style.color='var(--green)';
+  };
+  ws.onclose = () => {
+    $('dot').classList.remove('live');
+    $('ctext').textContent='RECONNECTING...';
+    $('ctext').style.color='var(--red)';
+    setTimeout(connect,1500);
+  };
+  ws.onmessage = ev => {
+    const d = JSON.parse(ev.data);
+
+    setMode(d.mode||'IDLE',
+            d.sleep_phase && d.sleep_phase!=='AWAKE',
+            (d.NE||0)>0.75);
+
+    // Endocrine
+    $('b-da').style.width=pct(d.DA||0);   $('v-da').textContent=(d.DA||0).toFixed(2);
+    $('b-5ht').style.width=pct(d['5HT']||0); $('v-5ht').textContent=(d['5HT']||0).toFixed(2);
+    $('b-ne').style.width=pct(d.NE||0);   $('v-ne').textContent=(d.NE||0).toFixed(2);
+    $('b-ach').style.width=pct(d.ACh||0); $('v-ach').textContent=(d.ACh||0).toFixed(2);
+
+    // Allostatic
+    $('b-allo').style.width=pct(d.allostatic_load||0);
+    $('v-allo').textContent=(d.allostatic_load||0).toFixed(3);
+    $('b-social').style.width=pct(d.social_comfort||0);
+    $('v-social').textContent=(d.social_comfort||0).toFixed(2);
+    $('b-prec').style.width=pct(d.prediction_error||0);
+    $('v-prec').textContent=(d.prediction_error||0).toFixed(3);
+
+    // Biology
+    $('tel-sleep').textContent=d.sleep_phase||'AWAKE';
+    $('tel-hebb').textContent=(d.hebbian_strength||0).toFixed(3);
+    $('tel-rem').textContent=d.rem_count||0;
+    $('tel-mourn').textContent=d.mourning_events||0;
+    $('tel-junc').textContent=d.junction_decisions||0;
+
+    // Stats
+    $('s-ep').textContent=d.episode||0;
+    $('s-best').textContent=(d.best_survival||0).toFixed(1)+'s';
+    $('s-dist').textContent=d.best_dist_ever<90?d.best_dist_ever.toFixed(2)+'m':'—';
+    $('s-reach').textContent=d.target_reached_count||0;
+
+    // Goal
+    $('goal-coords').textContent=`(${(d.goal_x||0).toFixed(1)}, ${(d.goal_y||0).toFixed(1)})`;
+
+    // Env chips
+    $('ec-stage').innerHTML=`STAGE<br>${d.curriculum_stage||1}`;
+    const windEl=$('ec-wind');
+    windEl.className='env-chip ec-wind'+(d.wind_active?' on':'');
+    windEl.innerHTML=`WIND<br>${d.wind_active?'HIT!':'OFF'}`;
+    const quakeEl=$('ec-quake');
+    quakeEl.className='env-chip ec-quake'+((d.quake_amp||0)>0.05?' on':'');
+    quakeEl.innerHTML=`QUAKE<br>${(d.quake_amp||0).toFixed(2)}`;
+
+    // LTM
+    $('b-ltm').style.width=pct(d.ltm_confidence||0);
+    $('v-ltm').textContent=Math.round((d.ltm_confidence||0)*100)+'%';
+
+    // Swarm telemetry
+    $('tel-alive').textContent=`${d.alive_count||0}/10`;
+    $('tel-ghosts').textContent=d.ghost_count||0;
+    $('tel-homeo').textContent=(d.homeostatic_error||0).toFixed(2);
+
+    // Surprise chart
+    const wd=chart.data.datasets[0].data, ld=chart.data.datasets[1].data;
+    wd.push(d.surprise_wm||0); wd.shift();
+    ld.push(d.surprise_ltm||0); ld.shift();
+    chart.update();
+
+    // Episode survival chart
+    if (d.episode_history && d.episode_history.length > chart2.data.labels.length) {
+      const hist = d.episode_history.slice(-80);
+      chart2.data.labels   = hist.map((_,i)=>i);
+      chart2.data.datasets[0].data = hist;
+      chart2.update();
+    }
+
+    // Cognitive map
+    if (d.cognitive_map) drawCogMap(d.cognitive_map, d.cm_scent, d.goal_x||4.8, d.goal_y||2.4, d.astar_path);
+
+    // Danger heatmap
+    if (d.danger_grid) drawHeat(d.danger_grid);
+
+    // Swarm cards
+    renderSwarm(d);
+    
+    // Visual Cortex
+    renderVisualCortex(d);
+  };
+}
+
+connect();
+</script>
+</body>
+</html>

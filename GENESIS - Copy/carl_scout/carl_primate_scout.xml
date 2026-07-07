@@ -1,0 +1,409 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mujoco model="CARL Primate Scout">
+  <option timestep="0.005" gravity="0 0 -9.81" solver="Newton" integrator="implicit" />
+  <compiler angle="radian" coordinate="local" inertiafromgeom="true" />
+
+  <default>
+    <geom contype="1" conaffinity="1" condim="3" friction="1.2 0.005 0.0001" />
+    <joint damping="0.15" frictionloss="0.003" />
+    <position ctrllimited="true" forcelimited="true" forcerange="-8.0 8.0" />
+    <velocity forcelimited="true" forcerange="-3.0 3.0" />
+  </default>
+
+  <asset>
+    <!-- === Body Materials === -->
+    <material name="shell_white" rgba="0.92 0.93 0.96 1.0" roughness="0.25" specular="0.5" />
+    <material name="frame_dark" rgba="0.13 0.15 0.18 1.0" roughness="0.45" specular="0.3" />
+    <material name="spine_segment" rgba="0.22 0.24 0.28 1.0" roughness="0.35" />
+    <material name="joint_ring" rgba="0.00 0.78 0.98 1.0" emission="1.0" />
+    <material name="accent_cyan" rgba="0.05 0.70 0.92 1.0" emission="0.6" />
+    <material name="eye_glow" rgba="0.00 0.88 1.00 1.0" emission="2.0" />
+    <material name="face_screen" rgba="0.03 0.04 0.06 1.0" roughness="0.05" specular="0.8" />
+
+    <!-- === Hand Materials === -->
+    <material name="palm_silver" rgba="0.72 0.74 0.78 1.0" roughness="0.25" specular="0.6" />
+    <material name="finger_seg" rgba="0.18 0.20 0.24 1.0" roughness="0.4" />
+    <material name="fingertip_gold" rgba="0.95 0.78 0.18 1.0" roughness="0.3" emission="0.15" />
+
+    <!-- === Wheel Materials === -->
+    <material name="wheel_rubber" rgba="0.10 0.10 0.12 1.0" roughness="0.95" />
+    <material name="wheel_hub" rgba="0.30 0.32 0.36 1.0" roughness="0.35" specular="0.4" />
+    <material name="wheel_roller" rgba="0.20 0.22 0.25 1.0" roughness="0.7" />
+
+    <!-- === Environment === -->
+    <material name="floor_mat" rgba="0.20 0.21 0.24 1.0" roughness="0.7" specular="0.15" />
+    <material name="table_mat" rgba="0.35 0.25 0.18 1.0" roughness="0.8" />
+    <material name="obj_blue" rgba="0.22 0.48 0.92 1.0" roughness="0.25" />
+    <material name="obj_orange" rgba="0.96 0.58 0.12 1.0" roughness="0.25" />
+    <material name="obj_green" rgba="0.20 0.85 0.40 1.0" roughness="0.3" />
+    <material name="obj_red" rgba="0.90 0.22 0.18 1.0" roughness="0.25" />
+  </asset>
+
+  <!-- ================================================================== -->
+  <!--                          WORLD                                     -->
+  <!-- ================================================================== -->
+  <worldbody>
+    <light name="key_sun" pos="2 1.5 5" dir="-0.25 -0.2 -1" diffuse="0.92 0.90 0.88" castshadow="true" />
+    <light name="fill_cool" pos="-2 -1 3.5" dir="0.3 0.15 -1" diffuse="0.35 0.40 0.50" castshadow="false" />
+    <light name="rim_back" pos="0 -3 2" dir="0 0.5 -0.5" diffuse="0.20 0.25 0.30" castshadow="false" />
+    <geom name="floor" type="plane" size="6 6 0.1" material="floor_mat" />
+
+    <!-- === Manipulable Objects (on floor within reach) === -->
+    <body name="obj_cube_0" pos="0.20 0.12 0.020">
+      <freejoint name="fj_cube_0" />
+      <geom name="gcube_0" type="box" size="0.020 0.020 0.020" mass="0.04"
+            material="obj_blue" contype="4" conaffinity="13" friction="1.8 0.01 0.002" />
+    </body>
+    <body name="obj_cube_1" pos="0.20 -0.12 0.020">
+      <freejoint name="fj_cube_1" />
+      <geom name="gcube_1" type="box" size="0.020 0.020 0.020" mass="0.04"
+            material="obj_red" contype="4" conaffinity="13" friction="1.8 0.01 0.002" />
+    </body>
+    <body name="obj_ball_0" pos="2.0 2.2 0.015">
+      <freejoint name="fj_ball_0" />
+      <geom name="gball_0" type="sphere" size="0.015" mass="0.02"
+            material="obj_orange" contype="4" conaffinity="13" friction="1.2 0.01 0.002" />
+    </body>
+    <body name="obj_cylinder_0" pos="2.0 2.4 0.020">
+      <freejoint name="fj_cyl_0" />
+      <geom name="gcyl_0" type="cylinder" size="0.012 0.020" mass="0.03"
+            material="obj_green" contype="4" conaffinity="13" friction="1.5 0.01 0.002" />
+    </body>
+
+    <!-- ============================================================== -->
+    <!--              CARL PRIMATE SCOUT — MAIN BODY                    -->
+    <!-- ============================================================== -->
+    <body name="base_platform" pos="0 0 0.058">
+      <freejoint name="root_joint" />
+
+      <!-- ── Chassis ────────────────────────────────────────────────── -->
+      <geom name="chassis_core" type="box" size="0.11 0.085 0.014"
+            material="frame_dark" mass="2.0" contype="1" conaffinity="1" />
+      <geom name="chassis_shell" type="box" size="0.09 0.072 0.006" pos="0 0 0.020"
+            material="shell_white" mass="0.2" contype="0" conaffinity="0" />
+      <!-- Edge accent strips -->
+      <geom name="edge_front" type="box" size="0.002 0.072 0.004" pos="0.092 0 0.020"
+            material="accent_cyan" contype="0" conaffinity="0" />
+      <geom name="edge_back" type="box" size="0.002 0.072 0.004" pos="-0.092 0 0.020"
+            material="accent_cyan" contype="0" conaffinity="0" />
+
+      <!-- ── Mecanum Wheels (4 corners) ─────────────────────────────── -->
+      <body name="wheel_FL" pos="0.085 0.105 -0.010">
+        <joint name="w_fl" type="hinge" axis="0 1 0" damping="0.008" frictionloss="0.001" />
+        <geom type="cylinder" size="0.042 0.020" euler="1.5708 0 0"
+              material="wheel_rubber" friction="1.6" mass="0.10" contype="1" conaffinity="1" />
+        <geom type="cylinder" size="0.018 0.021" euler="1.5708 0 0"
+              material="wheel_hub" contype="0" conaffinity="0" />
+        <!-- Roller visual accents (suggest mecanum) -->
+        <geom type="capsule" fromto="0.030 0 -0.015  -0.030 0 0.015" size="0.005"
+              material="wheel_roller" contype="0" conaffinity="0" />
+        <geom type="capsule" fromto="-0.015 0 -0.030  0.015 0 0.030" size="0.005"
+              material="wheel_roller" contype="0" conaffinity="0" />
+      </body>
+      <body name="wheel_FR" pos="0.085 -0.105 -0.010">
+        <joint name="w_fr" type="hinge" axis="0 1 0" damping="0.008" frictionloss="0.001" />
+        <geom type="cylinder" size="0.042 0.020" euler="1.5708 0 0"
+              material="wheel_rubber" friction="1.6" mass="0.10" contype="1" conaffinity="1" />
+        <geom type="cylinder" size="0.018 0.021" euler="1.5708 0 0"
+              material="wheel_hub" contype="0" conaffinity="0" />
+        <geom type="capsule" fromto="-0.030 0 -0.015  0.030 0 0.015" size="0.005"
+              material="wheel_roller" contype="0" conaffinity="0" />
+        <geom type="capsule" fromto="0.015 0 -0.030  -0.015 0 0.030" size="0.005"
+              material="wheel_roller" contype="0" conaffinity="0" />
+      </body>
+      <body name="wheel_RL" pos="-0.085 0.105 -0.010">
+        <joint name="w_rl" type="hinge" axis="0 1 0" damping="0.008" frictionloss="0.001" />
+        <geom type="cylinder" size="0.042 0.020" euler="1.5708 0 0"
+              material="wheel_rubber" friction="1.6" mass="0.10" contype="1" conaffinity="1" />
+        <geom type="cylinder" size="0.018 0.021" euler="1.5708 0 0"
+              material="wheel_hub" contype="0" conaffinity="0" />
+        <geom type="capsule" fromto="-0.030 0 -0.015  0.030 0 0.015" size="0.005"
+              material="wheel_roller" contype="0" conaffinity="0" />
+        <geom type="capsule" fromto="0.015 0 -0.030  -0.015 0 0.030" size="0.005"
+              material="wheel_roller" contype="0" conaffinity="0" />
+      </body>
+      <body name="wheel_RR" pos="-0.085 -0.105 -0.010">
+        <joint name="w_rr" type="hinge" axis="0 1 0" damping="0.008" frictionloss="0.001" />
+        <geom type="cylinder" size="0.042 0.020" euler="1.5708 0 0"
+              material="wheel_rubber" friction="1.6" mass="0.10" contype="1" conaffinity="1" />
+        <geom type="cylinder" size="0.018 0.021" euler="1.5708 0 0"
+              material="wheel_hub" contype="0" conaffinity="0" />
+        <geom type="capsule" fromto="0.030 0 -0.015  -0.030 0 0.015" size="0.005"
+              material="wheel_roller" contype="0" conaffinity="0" />
+        <geom type="capsule" fromto="-0.015 0 -0.030  0.015 0 0.030" size="0.005"
+              material="wheel_roller" contype="0" conaffinity="0" />
+      </body>
+
+      <!-- ============================================================ -->
+      <!--                   FLEXIBLE 3-VERTEBRA SPINE                  -->
+      <!-- ============================================================ -->
+      <body name="spine_1" pos="0 0 0.028">
+        <joint name="spine1_pitch" type="hinge" axis="0 1 0" range="-0.40 0.40" stiffness="4.0" damping="0.6" />
+        <joint name="spine1_roll"  type="hinge" axis="1 0 0" range="-0.30 0.30" stiffness="4.0" damping="0.6" />
+        <!-- Vertebra segment -->
+        <geom type="capsule" fromto="0 0 0  0 0 0.048" size="0.032" material="spine_segment" mass="0.18" contype="1" conaffinity="1" />
+        <!-- Glow ring at joint -->
+        <geom type="cylinder" size="0.036 0.003" pos="0 0 0" material="joint_ring" contype="0" conaffinity="0" />
+
+        <body name="spine_2" pos="0 0 0.054">
+          <joint name="spine2_pitch" type="hinge" axis="0 1 0" range="-0.35 0.35" stiffness="3.5" damping="0.5" />
+          <joint name="spine2_yaw"   type="hinge" axis="0 0 1" range="-0.50 0.50" stiffness="3.0" damping="0.5" />
+          <geom type="capsule" fromto="0 0 0  0 0 0.048" size="0.030" material="shell_white" mass="0.15" contype="1" conaffinity="1" />
+          <geom type="cylinder" size="0.034 0.003" pos="0 0 0" material="joint_ring" contype="0" conaffinity="0" />
+
+          <body name="spine_3" pos="0 0 0.054">
+            <joint name="spine3_pitch" type="hinge" axis="0 1 0" range="-0.40 0.40" stiffness="3.5" damping="0.5" />
+            <joint name="spine3_roll"  type="hinge" axis="1 0 0" range="-0.30 0.30" stiffness="3.0" damping="0.5" />
+            <!-- Chest / shoulder platform -->
+            <geom name="chest" type="box" size="0.038 0.058 0.032" material="shell_white" mass="0.30" contype="1" conaffinity="1" />
+            <geom name="chest_accent" type="box" size="0.005 0.050 0.028" pos="0.038 0 0" material="accent_cyan" contype="0" conaffinity="0" />
+            <geom type="cylinder" size="0.040 0.003" pos="0 0 -0.032" material="joint_ring" contype="0" conaffinity="0" />
+
+            <!-- ====================================================== -->
+            <!--                   LEFT ARM (8 DOF)                     -->
+            <!-- ====================================================== -->
+            <body name="shoulder_mount_L" pos="0 0.063 0.008">
+              <joint name="shoulder_yaw_L" type="hinge" axis="0 0 1" range="-0.3 2.2" damping="2.5" />
+              <geom type="sphere" size="0.020" material="frame_dark" mass="0.02" contype="1" conaffinity="1" />
+              <geom type="cylinder" size="0.022 0.003" material="joint_ring" contype="0" conaffinity="0" />
+
+              <body name="upper_arm_L" pos="0 0 0">
+                <joint name="shoulder_pitch_L" type="hinge" axis="0 1 0" range="-2.4 2.4" damping="2.5" />
+                <geom name="upperarm_L" type="capsule" fromto="0 0 0  0.14 0 0" size="0.015"
+                      material="frame_dark" mass="0.10" contype="1" conaffinity="1" />
+                <!-- Bicep accent -->
+                <geom type="cylinder" size="0.017 0.003" pos="0.07 0 0" euler="0 1.5708 0"
+                      material="accent_cyan" contype="0" conaffinity="0" />
+
+                <body name="forearm_L" pos="0.14 0 0">
+                  <joint name="elbow_L" type="hinge" axis="0 1 0" range="-2.8 0" damping="2.0" />
+                  <geom type="sphere" size="0.016" material="spine_segment" mass="0.01" contype="1" conaffinity="1" />
+                  <geom name="forearm_L_geom" type="capsule" fromto="0 0 0  0.13 0 0" size="0.012"
+                        material="shell_white" mass="0.07" contype="1" conaffinity="1" />
+
+                  <!-- === WRIST + HAND (Left) === -->
+                  <body name="wrist_L" pos="0.13 0 0">
+                    <joint name="wrist_roll_L" type="hinge" axis="1 0 0" range="-1.57 1.57" damping="1.0" />
+                    <geom type="sphere" size="0.010" material="spine_segment" mass="0.008" contype="0" conaffinity="0" />
+
+                    <body name="wrist_flex_L" pos="0 0 0">
+                      <joint name="wrist_pitch_L" type="hinge" axis="0 1 0" range="-1.3 1.3" damping="1.0" />
+                      <geom type="sphere" size="0.013" material="spine_segment" contype="0" conaffinity="0" />
+
+                      <!-- Palm -->
+                      <geom name="palm_L" type="box" size="0.016 0.020 0.008" pos="0.016 0 0"
+                            material="palm_silver" mass="0.025" contype="1" conaffinity="1" friction="2.0 0.01 0.001" />
+
+                      <!-- ─── Thumb (opposes from below) ─── -->
+                      <body name="thumb_L" pos="0.012 0 -0.012">
+                        <joint name="thumb_L_knuckle" type="hinge" axis="0 1 0" range="0 1.4" damping="0.6" />
+                        <geom type="capsule" fromto="0 0 0  0.022 0 0.010" size="0.007"
+                              material="finger_seg" mass="0.008" contype="1" conaffinity="1" friction="2.0 0.01 0.001" />
+                        <geom name="thumb_L_tip" type="sphere" size="0.008" pos="0.022 0 0.010"
+                              material="fingertip_gold" mass="0.003" contype="1" conaffinity="1" friction="2.5 0.01 0.001" />
+                        <site name="touch_thumb_L" pos="0.022 0 0.010" size="0.007" rgba="1 0.3 0 0.25" />
+                      </body>
+
+                      <!-- ─── Index Finger (top) ─── -->
+                      <body name="index_L" pos="0.032 0.014 0.002">
+                        <joint name="index_L_knuckle" type="hinge" axis="0 1 0" range="-1.4 0" damping="0.6" />
+                        <geom type="capsule" fromto="0 0 0  0.026 0 0" size="0.006"
+                              material="finger_seg" mass="0.006" contype="1" conaffinity="1" friction="2.0 0.01 0.001" />
+                        <geom name="index_L_tip" type="sphere" size="0.007" pos="0.026 0 0"
+                              material="fingertip_gold" mass="0.003" contype="1" conaffinity="1" friction="2.5 0.01 0.001" />
+                        <site name="touch_index_L" pos="0.026 0 0" size="0.006" rgba="1 0.3 0 0.25" />
+                      </body>
+
+                      <!-- ─── Middle Finger (bottom) ─── -->
+                      <body name="middle_L" pos="0.032 -0.014 0.002">
+                        <joint name="middle_L_knuckle" type="hinge" axis="0 1 0" range="-1.4 0" damping="0.6" />
+                        <geom type="capsule" fromto="0 0 0  0.028 0 0" size="0.006"
+                              material="finger_seg" mass="0.006" contype="1" conaffinity="1" friction="2.0 0.01 0.001" />
+                        <geom name="middle_L_tip" type="sphere" size="0.007" pos="0.028 0 0"
+                              material="fingertip_gold" mass="0.003" contype="1" conaffinity="1" friction="2.5 0.01 0.001" />
+                        <site name="touch_middle_L" pos="0.028 0 0" size="0.006" rgba="1 0.3 0 0.25" />
+                      </body>
+
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+
+            <!-- ====================================================== -->
+            <!--                   RIGHT ARM (8 DOF, mirrored)          -->
+            <!-- ====================================================== -->
+            <body name="shoulder_mount_R" pos="0 -0.063 0.008">
+              <joint name="shoulder_yaw_R" type="hinge" axis="0 0 1" range="-2.2 0.3" damping="2.5" />
+              <geom type="sphere" size="0.020" material="frame_dark" mass="0.02" contype="1" conaffinity="1" />
+              <geom type="cylinder" size="0.022 0.003" material="joint_ring" contype="0" conaffinity="0" />
+
+              <body name="upper_arm_R" pos="0 0 0">
+                <joint name="shoulder_pitch_R" type="hinge" axis="0 1 0" range="-2.4 2.4" damping="2.5" />
+                <geom name="upperarm_R" type="capsule" fromto="0 0 0  0.14 0 0" size="0.015"
+                      material="frame_dark" mass="0.10" contype="1" conaffinity="1" />
+                <geom type="cylinder" size="0.017 0.003" pos="0.07 0 0" euler="0 1.5708 0"
+                      material="accent_cyan" contype="0" conaffinity="0" />
+
+                <body name="forearm_R" pos="0.14 0 0">
+                  <joint name="elbow_R" type="hinge" axis="0 1 0" range="-2.8 0" damping="2.0" />
+                  <geom type="sphere" size="0.016" material="spine_segment" mass="0.01" contype="1" conaffinity="1" />
+                  <geom name="forearm_R_geom" type="capsule" fromto="0 0 0  0.13 0 0" size="0.012"
+                        material="shell_white" mass="0.07" contype="1" conaffinity="1" />
+
+                  <!-- === WRIST + HAND (Right) === -->
+                  <body name="wrist_R" pos="0.13 0 0">
+                    <joint name="wrist_roll_R" type="hinge" axis="1 0 0" range="-1.57 1.57" damping="1.0" />
+                    <geom type="sphere" size="0.010" material="spine_segment" mass="0.008" contype="0" conaffinity="0" />
+
+                    <body name="wrist_flex_R" pos="0 0 0">
+                      <joint name="wrist_pitch_R" type="hinge" axis="0 1 0" range="-1.3 1.3" damping="1.0" />
+                      <geom type="sphere" size="0.013" material="spine_segment" contype="0" conaffinity="0" />
+
+                      <geom name="palm_R" type="box" size="0.016 0.020 0.008" pos="0.016 0 0"
+                            material="palm_silver" mass="0.025" contype="1" conaffinity="1" friction="2.0 0.01 0.001" />
+
+                      <!-- ─── Thumb (opposes from below) ─── -->
+                      <body name="thumb_R" pos="0.012 0 -0.012">
+                        <joint name="thumb_R_knuckle" type="hinge" axis="0 1 0" range="0 1.4" damping="0.6" />
+                        <geom type="capsule" fromto="0 0 0  0.022 0 0.010" size="0.007"
+                              material="finger_seg" mass="0.008" contype="1" conaffinity="1" friction="2.0 0.01 0.001" />
+                        <geom name="thumb_R_tip" type="sphere" size="0.008" pos="0.022 0 0.010"
+                              material="fingertip_gold" mass="0.003" contype="1" conaffinity="1" friction="2.5 0.01 0.001" />
+                        <site name="touch_thumb_R" pos="0.022 0 0.010" size="0.007" rgba="1 0.3 0 0.25" />
+                      </body>
+
+                      <!-- ─── Index Finger ─── -->
+                      <body name="index_R" pos="0.032 -0.014 0.002">
+                        <joint name="index_R_knuckle" type="hinge" axis="0 1 0" range="-1.4 0" damping="0.6" />
+                        <geom type="capsule" fromto="0 0 0  0.026 0 0" size="0.006"
+                              material="finger_seg" mass="0.006" contype="1" conaffinity="1" friction="2.0 0.01 0.001" />
+                        <geom name="index_R_tip" type="sphere" size="0.007" pos="0.026 0 0"
+                              material="fingertip_gold" mass="0.003" contype="1" conaffinity="1" friction="2.5 0.01 0.001" />
+                        <site name="touch_index_R" pos="0.026 0 0" size="0.006" rgba="1 0.3 0 0.25" />
+                      </body>
+
+                      <!-- ─── Middle Finger ─── -->
+                      <body name="middle_R" pos="0.032 0.014 0.002">
+                        <joint name="middle_R_knuckle" type="hinge" axis="0 1 0" range="-1.4 0" damping="0.6" />
+                        <geom type="capsule" fromto="0 0 0  0.028 0 0" size="0.006"
+                              material="finger_seg" mass="0.006" contype="1" conaffinity="1" friction="2.0 0.01 0.001" />
+                        <geom name="middle_R_tip" type="sphere" size="0.007" pos="0.028 0 0"
+                              material="fingertip_gold" mass="0.003" contype="8" conaffinity="12" friction="2.5 0.01 0.001" />
+                        <site name="touch_middle_R" pos="0.028 0 0" size="0.006" rgba="1 0.3 0 0.25" />
+                      </body>
+
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+
+            <!-- ====================================================== -->
+            <!--                  NECK + EXPRESSIVE HEAD                 -->
+            <!-- ====================================================== -->
+            <body name="neck_base" pos="0.005 0 0.038">
+              <joint name="neck_tilt" type="hinge" axis="0 1 0" range="-0.65 0.75" stiffness="0.6" damping="0.15" />
+              <geom type="capsule" fromto="0 0 0  0 0 0.035" size="0.014" material="frame_dark" mass="0.03" contype="1" conaffinity="1" />
+
+              <body name="head" pos="0 0 0.045">
+                <joint name="head_pan" type="hinge" axis="0 0 1" range="-1.6 1.6" damping="0.12" />
+                <!-- Head shell -->
+                <geom name="head_shell" type="box" size="0.042 0.048 0.035"
+                      material="shell_white" mass="0.10" contype="1" conaffinity="1" />
+                <!-- Face visor (screen area) -->
+                <geom name="face_visor" type="box" size="0.004 0.040 0.025" pos="0.042 0 -0.005"
+                      material="face_screen" contype="0" conaffinity="0" />
+                <!-- Left Eye -->
+                <geom name="eye_L" type="sphere" size="0.009" pos="0.046 0.020 0.006"
+                      material="eye_glow" contype="0" conaffinity="0" />
+                <!-- Right Eye -->
+                <geom name="eye_R" type="sphere" size="0.009" pos="0.046 -0.020 0.006"
+                      material="eye_glow" contype="0" conaffinity="0" />
+                <!-- "Mouth" indicator LED -->
+                <geom name="mouth_led" type="box" size="0.003 0.015 0.003" pos="0.045 0 -0.018"
+                      material="accent_cyan" contype="0" conaffinity="0" />
+                <!-- Sensor dome on top -->
+                <geom name="sensor_dome" type="ellipsoid" size="0.025 0.030 0.018" pos="0 0 0.038"
+                      material="frame_dark" contype="0" conaffinity="0" />
+                <!-- Camera lens -->
+                <geom name="camera_lens" type="cylinder" size="0.012 0.005" pos="0.047 0 -0.008"
+                      euler="0 1.5708 0" material="frame_dark" contype="0" conaffinity="0" />
+                <geom name="camera_ring" type="cylinder" size="0.014 0.002" pos="0.049 0 -0.008"
+                      euler="0 1.5708 0" material="joint_ring" contype="0" conaffinity="0" />
+                <!-- Antenna / lidar nub -->
+                <geom name="antenna" type="capsule" fromto="0 0 0.035  0 0 0.060" size="0.004"
+                      material="frame_dark" contype="0" conaffinity="0" />
+                <geom name="antenna_tip" type="sphere" size="0.006" pos="0 0 0.062"
+                      material="eye_glow" contype="0" conaffinity="0" />
+              </body>
+            </body>
+
+          </body> <!-- spine_3 -->
+        </body> <!-- spine_2 -->
+      </body> <!-- spine_1 -->
+    </body> <!-- base_platform -->
+  </worldbody>
+
+  <!-- ================================================================== -->
+  <!--                         ACTUATORS                                  -->
+  <!-- ================================================================== -->
+  <actuator>
+    <!-- ── Mecanum Wheels (velocity-controlled) ── -->
+    <velocity name="act_w_fl" joint="w_fl" kv="0.6" forcelimited="true" forcerange="-0.5 0.5" ctrllimited="true" ctrlrange="-40 40" />
+    <velocity name="act_w_fr" joint="w_fr" kv="0.6" forcelimited="true" forcerange="-0.5 0.5" ctrllimited="true" ctrlrange="-40 40" />
+    <velocity name="act_w_rl" joint="w_rl" kv="0.6" forcelimited="true" forcerange="-0.5 0.5" ctrllimited="true" ctrlrange="-40 40" />
+    <velocity name="act_w_rr" joint="w_rr" kv="0.6" forcelimited="true" forcerange="-0.5 0.5" ctrllimited="true" ctrlrange="-40 40" />
+
+    <!-- ── Flexible Spine (6 DOF) ── -->
+    <position name="act_spine1_pitch" joint="spine1_pitch" kp="5.0" ctrlrange="-0.40 0.40" />
+    <position name="act_spine1_roll"  joint="spine1_roll"  kp="5.0" ctrlrange="-0.30 0.30" />
+    <position name="act_spine2_pitch" joint="spine2_pitch" kp="4.0" ctrlrange="-0.35 0.35" />
+    <position name="act_spine2_yaw"   joint="spine2_yaw"   kp="4.0" ctrlrange="-0.50 0.50" />
+    <position name="act_spine3_pitch" joint="spine3_pitch" kp="4.0" ctrlrange="-0.40 0.40" />
+    <position name="act_spine3_roll"  joint="spine3_roll"  kp="4.0" ctrlrange="-0.30 0.30" />
+
+    <!-- ── Neck + Head (2 DOF) ── -->
+    <position name="act_neck_tilt" joint="neck_tilt" kp="0.8" ctrlrange="-0.65 0.75" />
+    <position name="act_head_pan"  joint="head_pan"  kp="0.6" ctrlrange="-1.6 1.6" />
+
+    <!-- ── Left Arm (5 DOF positioning + 3 DOF fingers = 8 DOF) ── -->
+    <position name="act_shoulder_yaw_L"   joint="shoulder_yaw_L"   kp="140.0" ctrlrange="-0.3 2.2" />
+    <position name="act_shoulder_pitch_L" joint="shoulder_pitch_L" kp="140.0" ctrlrange="-2.4 2.4" />
+    <position name="act_elbow_L"          joint="elbow_L"          kp="120.0" ctrlrange="-2.8 0" />
+    <position name="act_wrist_roll_L"     joint="wrist_roll_L"     kp="60.0"  ctrlrange="-1.57 1.57" />
+    <position name="act_wrist_pitch_L"    joint="wrist_pitch_L"    kp="60.0"  ctrlrange="-1.3 1.3" />
+    <position name="act_thumb_L"          joint="thumb_L_knuckle"  kp="35.0"  ctrlrange="0 1.4" forcelimited="true" forcerange="-1.5 1.5" />
+    <position name="act_index_L"          joint="index_L_knuckle"  kp="35.0"  ctrlrange="-1.4 0" forcelimited="true" forcerange="-1.5 1.5" />
+    <position name="act_middle_L"         joint="middle_L_knuckle" kp="35.0"  ctrlrange="-1.4 0" forcelimited="true" forcerange="-1.5 1.5" />
+
+    <!-- ── Right Arm (5 DOF positioning + 3 DOF fingers = 8 DOF) ── -->
+    <position name="act_shoulder_yaw_R"   joint="shoulder_yaw_R"   kp="140.0" ctrlrange="-2.2 0.3" />
+    <position name="act_shoulder_pitch_R" joint="shoulder_pitch_R" kp="140.0" ctrlrange="-2.4 2.4" />
+    <position name="act_elbow_R"          joint="elbow_R"          kp="120.0" ctrlrange="-2.8 0" />
+    <position name="act_wrist_roll_R"     joint="wrist_roll_R"     kp="60.0"  ctrlrange="-1.57 1.57" />
+    <position name="act_wrist_pitch_R"    joint="wrist_pitch_R"    kp="60.0"  ctrlrange="-1.3 1.3" />
+    <position name="act_thumb_R"          joint="thumb_R_knuckle"  kp="35.0"  ctrlrange="0 1.4" forcelimited="true" forcerange="-1.5 1.5" />
+    <position name="act_index_R"          joint="index_R_knuckle"  kp="35.0"  ctrlrange="-1.4 0" forcelimited="true" forcerange="-1.5 1.5" />
+    <position name="act_middle_R"         joint="middle_R_knuckle" kp="35.0"  ctrlrange="-1.4 0" forcelimited="true" forcerange="-1.5 1.5" />
+  </actuator>
+
+  <!-- ================================================================== -->
+  <!--                          SENSORS                                   -->
+  <!-- ================================================================== -->
+  <sensor>
+    <!-- Fingertip touch sensors (6 total) -->
+    <touch name="touch_thumb_L_s"  site="touch_thumb_L" />
+    <touch name="touch_index_L_s"  site="touch_index_L" />
+    <touch name="touch_middle_L_s" site="touch_middle_L" />
+    <touch name="touch_thumb_R_s"  site="touch_thumb_R" />
+    <touch name="touch_index_R_s"  site="touch_index_R" />
+    <touch name="touch_middle_R_s" site="touch_middle_R" />
+  </sensor>
+
+  <contact>
+    <exclude body1="spine_3" body2="upper_arm_L" />
+    <exclude body1="spine_3" body2="upper_arm_R" />
+  </contact>
+
+</mujoco>

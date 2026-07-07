@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Genesis Dual-Mind Telemetry</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg: #04050a;
+        --panel: rgba(12, 15, 25, 0.85);
+        --panel-border: rgba(30, 120, 255, 0.2);
+        --cyan: #00e5ff;
+        --blue: #1e78ff;
+        --red: #ff2d55;
+        --amber: #ffb800;
+        --green: #00ff88;
+        --purple: #bf5fff;
+        --dim: #4a5568;
+        --text: #c8d8f0;
+        --mono: 'Space Mono', monospace;
+        --sans: 'Syne', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        font-family: var(--sans);
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        overflow-x: hidden;
+        display: flex;
+        flex-direction: column;
+        padding: 1rem;
+    }
+
+    /* Ambient Background Glow */
+    body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(ellipse 70% 50% at 50% 50%, rgba(30,120,255,0.05), transparent);
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    h1, h2, h3 { font-weight: 800; text-transform: uppercase; letter-spacing: 2px; }
+    
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 1rem 1rem 1rem;
+        border-bottom: 1px solid var(--panel-border);
+        margin-bottom: 1rem;
+    }
+
+    .header-title { font-size: 1.5rem; color: var(--cyan); text-shadow: 0 0 10px rgba(0,229,255,0.5); }
+    .status-indicator { font-family: var(--mono); font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); box-shadow: 0 0 8px var(--red); }
+    .status-dot.connected { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+    .main-grid {
+        display: grid;
+        grid-template-columns: 350px 1fr 1fr;
+        gap: 1rem;
+        flex: 1;
+    }
+
+    .panel {
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 12px;
+        padding: 1rem;
+        backdrop-filter: blur(10px);
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .panel-title {
+        font-size: 1.1rem;
+        color: var(--text);
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding-bottom: 0.5rem;
+    }
+
+    .bot-panel {
+        border-top: 3px solid var(--dim);
+    }
+    #panel-A { border-top-color: var(--cyan); }
+    #panel-B { border-top-color: var(--purple); }
+
+    .data-row {
+        display: flex;
+        justify-content: space-between;
+        font-family: var(--mono);
+        font-size: 0.85rem;
+        padding: 4px 0;
+    }
+    
+    .data-val { color: var(--cyan); }
+
+    /* Canvases */
+    canvas {
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        width: 100%;
+        image-rendering: pixelated;
+    }
+
+    .map-container { position: relative; }
+    .radar-container { position: relative; width: 100%; aspect-ratio: 1; }
+    .compass-container { position: relative; width: 100%; aspect-ratio: 1; }
+    
+    .sparkline-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+    .sparkline-label { font-family: var(--mono); font-size: 0.8rem; width: 40px; }
+    .sparkline-val { font-family: var(--mono); font-size: 0.8rem; width: 40px; text-align: right; }
+    .spark-canvas { flex: 1; height: 30px; }
+
+    /* Meters */
+    .meter-container { margin-bottom: 8px; }
+    .meter-header { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.75rem; margin-bottom: 4px; }
+    .meter-track { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+    .meter-fill { height: 100%; background: var(--cyan); transition: width 0.1s linear; }
+    
+    .bot-header { display: flex; justify-content: space-between; align-items: center; }
+    .bot-title { font-size: 1.5rem; text-shadow: 0 0 10px currentColor; }
+    #panel-A .bot-title { color: var(--cyan); }
+    #panel-B .bot-title { color: var(--purple); }
+
+    .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-title">GENESIS // TELEMETRY</div>
+    <div class="status-indicator">
+        <div id="conn-dot" class="status-dot"></div>
+        <span id="conn-text">DISCONNECTED</span>
+    </div>
+</div>
+
+<div class="main-grid">
+    <!-- LEFT: World Map -->
+    <div class="panel">
+        <div class="panel-title">WORLD MAP</div>
+        <div class="map-container">
+            <canvas id="worldCanvas" width="400" height="400"></canvas>
+        </div>
+        <div class="data-row"><span>Day Factor:</span> <span id="day-factor" class="data-val">0.00</span></div>
+        <div style="font-family: var(--mono); font-size: 0.7rem; color: var(--dim); margin-top: 1rem;">
+            Green: Food | Red: Danger<br>
+            Cyan: CARL-A | Purple: CARL-B<br>
+            Crosshairs: Current Goals
+        </div>
+    </div>
+
+    <!-- MIDDLE: CARL-A -->
+    <div class="panel bot-panel" id="panel-A">
+        <div class="bot-header">
+            <div class="bot-title">CARL-A</div>
+            <div style="font-family: var(--mono); font-size: 0.9rem;" id="a-mode" class="data-val">IDLE</div>
+        </div>
+        
+        <div class="grid-2">
+            <div>
+                <div class="panel-title" style="font-size:0.9rem;">EGO-RADAR (LIDAR)</div>
+                <canvas id="radar-a" width="200" height="200"></canvas>
+            </div>
+            <div>
+                <div class="panel-title" style="font-size:0.9rem;">EMOTIONAL COMPASS</div>
+                <canvas id="compass-a" width="200" height="200"></canvas>
+            </div>
+        </div>
+
+        <div class="panel-title" style="font-size:0.9rem; margin-top: 0.5rem;">NEUROCHEMISTRY</div>
+        <div id="sparks-a">
+            <!-- Sparklines injected via JS -->
+        </div>
+
+        <div class="panel-title" style="font-size:0.9rem; margin-top: 0.5rem;">INTERNAL STATE</div>
+        <div id="meters-a">
+            <!-- Meters injected via JS -->
+        </div>
+
+        <div class="data-row" style="margin-top: 0.5rem;">
+            <span>Reflex Ratio:</span> 
+            <span id="a-reflex" class="data-val">0%</span>
+        </div>
+        <div class="meter-track" style="height: 4px; margin-bottom: 10px;"><div id="a-reflex-bar" class="meter-fill" style="width: 0%; background: var(--amber);"></div></div>
+        
+        <div class="data-row"><span>Energy:</span> <span id="a-energy" class="data-val">100.0</span></div>
+        <div class="data-row"><span>Neck Target:</span> <span id="a-neck" class="data-val">0.00</span></div>
+        <div class="data-row"><span>Head Pan:</span> <span id="a-pan" class="data-val">0.00</span></div>
+    </div>
+
+    <!-- RIGHT: CARL-B -->
+    <div class="panel bot-panel" id="panel-B">
+        <div class="bot-header">
+            <div class="bot-title">CARL-B</div>
+            <div style="font-family: var(--mono); font-size: 0.9rem;" id="b-mode" class="data-val" style="color:var(--purple);">IDLE</div>
+        </div>
+        
+        <div class="grid-2">
+            <div>
+                <div class="panel-title" style="font-size:0.9rem;">EGO-RADAR (LIDAR)</div>
+                <canvas id="radar-b" width="200" height="200"></canvas>
+            </div>
+            <div>
+                <div class="panel-title" style="font-size:0.9rem;">EMOTIONAL COMPASS</div>
+                <canvas id="compass-b" width="200" height="200"></canvas>
+            </div>
+        </div>
+
+        <div class="panel-title" style="font-size:0.9rem; margin-top: 0.5rem;">NEUROCHEMISTRY</div>
+        <div id="sparks-b"></div>
+
+        <div class="panel-title" style="font-size:0.9rem; margin-top: 0.5rem;">INTERNAL STATE</div>
+        <div id="meters-b"></div>
+
+        <div class="data-row" style="margin-top: 0.5rem;">
+            <span>Reflex Ratio:</span> 
+            <span id="b-reflex" class="data-val">0%</span>
+        </div>
+        <div class="meter-track" style="height: 4px; margin-bottom: 10px;"><div id="b-reflex-bar" class="meter-fill" style="width: 0%; background: var(--amber);"></div></div>
+        
+        <div class="data-row"><span>Energy:</span> <span id="b-energy" class="data-val">100.0</span></div>
+        <div class="data-row"><span>Neck Target:</span> <span id="b-neck" class="data-val">0.00</span></div>
+        <div class="data-row"><span>Head Pan:</span> <span id="b-pan" class="data-val">0.00</span></div>
+    </div>
+</div>
+
+<script>
+    const COLORS = {
+        cyan: '#00e5ff',
+        blue: '#1e78ff',
+        red: '#ff2d55',
+        amber: '#ffb800',
+        green: '#00ff88',
+        purple: '#bf5fff',
+        dim: '#4a5568',
+        DA: '#00e5ff',
+        NE: '#ff2d55',
+        ACh: '#ffb800',
+        SHT: '#bf5fff'
+    };
+
+    // --- SPARKLINE SYSTEM ---
+    const HISTORY_LEN = 150; // 5 seconds at 30Hz
+    const history = {
+        'A': { DA: [], NE: [], ACh: [], SHT: [], path: [] },
+        'B': { DA: [], NE: [], ACh: [], SHT: [], path: [] }
+    };
+
+    function initSparklines(botId) {
+        const container = document.getElementById(`sparks-${botId.toLowerCase()}`);
+        ['DA', 'NE', 'ACh', 'SHT'].forEach(chem => {
+            container.innerHTML += `
+                <div class="sparkline-container">
+                    <div class="sparkline-label" style="color:${COLORS[chem]}">${chem}</div>
+                    <canvas id="spark-${botId}-${chem}" class="spark-canvas" width="200" height="30"></canvas>
+                    <div class="sparkline-val" id="val-${botId}-${chem}">0.00</div>
+                </div>
+            `;
+            // fill history
+            for(let i=0; i<HISTORY_LEN; i++) history[botId][chem].push(0.0);
+        });
+    }
+    initSparklines('A');
+    initSparklines('B');
+
+    function drawSparkline(botId, chem, val) {
+        const arr = history[botId][chem];
+        arr.push(val);
+        arr.shift();
+        
+        document.getElementById(`val-${botId}-${chem}`).innerText = val.toFixed(2);
+        
+        const canvas = document.getElementById(`spark-${botId}-${chem}`);
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        
+        ctx.clearRect(0, 0, w, h);
+        ctx.beginPath();
+        ctx.strokeStyle = COLORS[chem];
+        ctx.lineWidth = 2;
+        
+        for(let i=0; i<HISTORY_LEN; i++) {
+            const x = (i / (HISTORY_LEN-1)) * w;
+            const y = h - (arr[i] * h);
+            if(i===0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    // --- METER SYSTEM ---
+    const STATES = ['confidence', 'fear', 'curiosity', 'hunger', 'grief', 'fatigue'];
+    function initMeters(botId) {
+        const container = document.getElementById(`meters-${botId.toLowerCase()}`);
+        STATES.forEach(s => {
+            const color = (s === 'fear' || s === 'hunger' || s === 'grief' || s === 'fatigue') ? COLORS.red : COLORS.cyan;
+            container.innerHTML += `
+                <div class="meter-container">
+                    <div class="meter-header">
+                        <span style="text-transform: capitalize;">${s}</span>
+                        <span id="meter-val-${botId}-${s}">0.00</span>
+                    </div>
+                    <div class="meter-track">
+                        <div id="meter-bar-${botId}-${s}" class="meter-fill" style="width: 0%; background: ${color}"></div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    initMeters('A');
+    initMeters('B');
+
+    function updateMeters(botId, stateObj) {
+        STATES.forEach(s => {
+            const val = stateObj[s] || 0;
+            document.getElementById(`meter-val-${botId}-${s}`).innerText = val.toFixed(2);
+            document.getElementById(`meter-bar-${botId}-${s}`).style.width = `${val * 100}%`;
+        });
+    }
+
+    // --- RADAR SYSTEM (Ego-Centric) ---
+    function drawRadar(botId, lidarArray) {
+        const canvas = document.getElementById(`radar-${botId.toLowerCase()}`);
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        const cx = w/2;
+        const cy = h/2;
+        const maxDist = 5.0; // max lidar distance
+        
+        ctx.clearRect(0, 0, w, h);
+        
+        // Draw grid rings
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 1;
+        for(let r=1; r<=3; r++) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, (r/3)*(cx-10), 0, Math.PI*2);
+            ctx.stroke();
+        }
+        
+        // Draw forward indicator (up is forward in ego-centric)
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx, 10);
+        ctx.stroke();
+
+        if(!lidarArray) return;
+
+        // Draw points
+        const color = botId === 'A' ? COLORS.cyan : COLORS.purple;
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
+        
+        ctx.beginPath();
+        for(let i=0; i<16; i++) {
+            const dist = lidarArray[i];
+            const normDist = dist / maxDist;
+            const r = normDist * (cx - 10);
+            
+            // i=0 is front. Angle in canvas: up is -PI/2.
+            // Lidar rays go counter-clockwise (or clockwise depending on physics). 
+            // Assuming index 0 is forward, angle is -PI/2 + i*(PI*2/16)
+            const angle = -Math.PI/2 + (i * Math.PI * 2 / 16);
+            
+            const px = cx + Math.cos(angle) * r;
+            const py = cy + Math.sin(angle) * r;
+            
+            if(i===0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+            
+            // Draw dot
+            ctx.fillRect(px-2, py-2, 4, 4);
+        }
+        ctx.closePath();
+        ctx.fillStyle = (botId === 'A' ? 'rgba(0, 229, 255, 0.1)' : 'rgba(191, 95, 255, 0.1)');
+        ctx.fill();
+        ctx.stroke();
+        
+        // Draw bot center
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(cx-3, cy-3, 6, 6);
+    }
+
+    // --- EMOTIONAL COMPASS ---
+    function drawCompass(botId, nm) {
+        const canvas = document.getElementById(`compass-${botId.toLowerCase()}`);
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        const cx = w/2;
+        const cy = h/2;
+        const radius = cx - 20;
+        
+        ctx.clearRect(0, 0, w, h);
+        
+        // Draw axes
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cx, 10); ctx.lineTo(cx, h-10); // Arousal (NE vs ACh)
+        ctx.moveTo(10, cy); ctx.lineTo(w-10, cy); // Valence (DA vs SHT)
+        ctx.stroke();
+        
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Aroused (NE)', cx, 10);
+        ctx.fillText('Calm (ACh)', cx, h-2);
+        ctx.textAlign = 'right';
+        ctx.fillText('Negative', 40, cy-5);
+        ctx.textAlign = 'left';
+        ctx.fillText('Positive (DA)', w-5, cy-5);
+        
+        // Calculate point
+        // Valence: X axis. DA pulls right (+1), SHT pulls left (-1)
+        const valence = nm.DA - nm.SHT; 
+        // Arousal: Y axis (inverted in canvas). NE pulls up (+1, so y is smaller), ACh pulls down (-1, y is larger)
+        const arousal = nm.NE - nm.ACh; 
+        
+        const px = cx + (valence * radius);
+        const py = cy - (arousal * radius); // minus because up is negative Y
+        
+        // Draw trail or just dot
+        const color = botId === 'A' ? COLORS.cyan : COLORS.purple;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(px, py, 6, 0, Math.PI*2);
+        ctx.fill();
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = color;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+
+    // --- WORLD MAP ---
+    const MAP_XMIN = 0.0, MAP_XMAX = 7.2;
+    const MAP_YMIN = 0.0, MAP_YMAX = 6.0;
+
+    function drawWorldMap(world, botA, botB) {
+        const canvas = document.getElementById('worldCanvas');
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        
+        ctx.clearRect(0, 0, w, h);
+        
+        function toPx(x, y) {
+            const px = ((x - MAP_XMIN) / (MAP_XMAX - MAP_XMIN)) * w;
+            const py = h - ((y - MAP_YMIN) / (MAP_YMAX - MAP_YMIN)) * h;
+            return [px, py];
+        }
+
+        // Draw Danger Grid Heatmap
+        if(world.danger_grid && world.danger_grid.length > 0) {
+            const dres = world.danger_grid.length;
+            const cellW = w / dres;
+            const cellH = h / dres;
+            for(let i=0; i<dres; i++) {
+                for(let j=0; j<dres; j++) {
+                    const val = world.danger_grid[i][j];
+                    if(val > 0) {
+                        const alpha = Math.min(0.8, val / 20.0);
+                        ctx.fillStyle = `rgba(255, 45, 85, ${alpha})`;
+                        // Note: i is x, j is y. Y is inverted in canvas.
+                        ctx.fillRect(i*cellW, h - (j+1)*cellH, cellW, cellH);
+                    }
+                }
+            }
+        }
+
+        // Draw Food
+        if(world.food) {
+            ctx.fillStyle = COLORS.green;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = COLORS.green;
+            world.food.forEach(f => {
+                if(f) {
+                    const [px, py] = toPx(f[0], f[1]);
+                    ctx.beginPath();
+                    ctx.arc(px, py, 5, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            });
+            ctx.shadowBlur = 0;
+        }
+
+        // Draw Paths & Bots
+        function drawBot(bot, color, botId) {
+            if(!bot || !bot.pos) return;
+            
+            // Record path
+            history[botId].path.push([...bot.pos]);
+            if(history[botId].path.length > 300) history[botId].path.shift();
+
+            // Draw path
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            history[botId].path.forEach((p, idx) => {
+                const [px, py] = toPx(p[0], p[1]);
+                if(idx === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            });
+            ctx.globalAlpha = 0.4;
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+
+            // Draw target crosshair
+            if(bot.target) {
+                const [tx, ty] = toPx(bot.target[0], bot.target[1]);
+                ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(tx-5, ty); ctx.lineTo(tx+5, ty);
+                ctx.moveTo(tx, ty-5); ctx.lineTo(tx, ty+5);
+                ctx.stroke();
+                
+                // Line to target
+                const [bx, by] = toPx(bot.pos[0], bot.pos[1]);
+                ctx.setLineDash([2, 4]);
+                ctx.beginPath();
+                ctx.moveTo(bx, by);
+                ctx.lineTo(tx, ty);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Draw Sonar Vector
+            if(bot.sonar_vector) {
+                const [bx, by] = toPx(bot.pos[0], bot.pos[1]);
+                const sx = bot.pos[0] + bot.sonar_vector[0] * 0.5;
+                const sy = bot.pos[1] + bot.sonar_vector[1] * 0.5;
+                const [spx, spy] = toPx(sx, sy);
+                
+                ctx.strokeStyle = '#ffb800'; // Amber for Sonar Field
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(bx, by);
+                ctx.lineTo(spx, spy);
+                ctx.stroke();
+            }
+
+            // Draw bot
+            const [bx, by] = toPx(bot.pos[0], bot.pos[1]);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(bx, by, 6, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(bx, by, 2, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        drawBot(botA, COLORS.cyan, 'A');
+        drawBot(botB, COLORS.purple, 'B');
+    }
+
+
+    // --- WEBSOCKET CONNECTION ---
+    let ws = null;
+    let reconnectTimeout = null;
+
+    function connect() {
+        ws = new WebSocket('ws://localhost:8765');
+        
+        ws.onopen = () => {
+            document.getElementById('conn-dot').classList.add('connected');
+            document.getElementById('conn-text').innerText = 'CONNECTED';
+            console.log('Connected to Telemetry');
+        };
+        
+        ws.onclose = () => {
+            document.getElementById('conn-dot').classList.remove('connected');
+            document.getElementById('conn-text').innerText = 'DISCONNECTED';
+            ws = null;
+            clearTimeout(reconnectTimeout);
+            reconnectTimeout = setTimeout(connect, 2000); // Auto-reconnect loop
+        };
+        
+        ws.onerror = (e) => {
+            ws.close();
+        };
+        
+        ws.onmessage = (msg) => {
+            try {
+                const data = JSON.parse(msg.data);
+                
+                ['A', 'B'].forEach(botId => {
+                    const b = data[botId];
+                    if(!b) return;
+
+                    // Text fields
+                    document.getElementById(`${botId.toLowerCase()}-mode`).innerText = b.mode;
+                    document.getElementById(`${botId.toLowerCase()}-mode`).style.color = (b.mode === 'MISSION') ? (botId==='A'?COLORS.cyan:COLORS.purple) : (b.mode === 'HUNGRY' ? COLORS.red : COLORS.green);
+                    document.getElementById(`${botId.toLowerCase()}-energy`).innerText = b.energy.toFixed(1);
+                    document.getElementById(`${botId.toLowerCase()}-neck`).innerText = b.neck.toFixed(2);
+                    document.getElementById(`${botId.toLowerCase()}-pan`).innerText = b.head_pan.toFixed(2);
+                    
+                    const ratio = b.reflex_ratio * 100;
+                    document.getElementById(`${botId.toLowerCase()}-reflex`).innerText = ratio.toFixed(1) + '%';
+                    document.getElementById(`${botId.toLowerCase()}-reflex-bar`).style.width = `${ratio}%`;
+                    if(b.reflex_fired) {
+                        document.getElementById(`${botId.toLowerCase()}-reflex`).style.color = COLORS.amber;
+                    } else {
+                        document.getElementById(`${botId.toLowerCase()}-reflex`).style.color = COLORS.cyan;
+                    }
+
+                    // Sparklines
+                    drawSparkline(botId, 'DA', b.nm.DA);
+                    drawSparkline(botId, 'NE', b.nm.NE);
+                    drawSparkline(botId, 'ACh', b.nm.ACh);
+                    drawSparkline(botId, 'SHT', b.nm.SHT);
+
+                    // Meters
+                    updateMeters(botId, b.state);
+
+                    // Radar & Compass
+                    drawRadar(botId, b.lidar);
+                    drawCompass(botId, b.nm);
+                });
+
+                // World
+                if(data.world) {
+                    document.getElementById('day-factor').innerText = data.world.day_factor.toFixed(2);
+                    drawWorldMap(data.world, data.A, data.B);
+                }
+                
+            } catch(e) {
+                console.error("Parse error", e);
+            }
+        };
+    }
+
+    connect();
+</script>
+</body>
+</html>

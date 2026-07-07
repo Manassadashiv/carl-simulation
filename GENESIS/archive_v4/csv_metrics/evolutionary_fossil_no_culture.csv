@@ -1,0 +1,7 @@
+generation,lifespan,food_harvested,damage_accumulated,elite_score,goal_count,habit_index,exploration_diversity,procedural_inheritance_on,ecological_persistence_on,culture_on,goal_crystallization_on
+0,54823,2,0.4275,54860.8625,0,0.9341,96.48,True,True,False,True
+1,12917,1,0.0879,12936.5604,0,1.8191,86.08,True,True,False,True
+2,5291,0,1.0000,5286.0000,0,-0.0000,47.28,True,True,False,True
+3,6652,0,0.1706,6651.1468,0,0.4854,78.80,True,True,False,True
+4,12580,0,0.0000,12580.0000,2,-0.0000,53.28,True,True,False,True
+5,9179,2,0.6557,9215.7216,0,0.4073,52.44,True,True,False,True

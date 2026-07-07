@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blob Mind Telemetry // Genesis</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg: #020306;
+        --panel: rgba(8, 10, 18, 0.88);
+        --panel-border: rgba(0, 229, 255, 0.18);
+        --cyan: #00e5ff;
+        --blue: #1e78ff;
+        --red: #ff2d55;
+        --amber: #ffb800;
+        --green: #00ff88;
+        --purple: #bf5fff;
+        --dim: #475569;
+        --text: #cbd5e1;
+        --mono: 'Space Mono', monospace;
+        --sans: 'Syne', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        font-family: var(--sans);
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 1.5rem;
+        background-image: 
+            radial-gradient(circle at 12% 18%, rgba(0, 229, 255, 0.06), transparent 35%),
+            radial-gradient(circle at 88% 82%, rgba(191, 95, 255, 0.06), transparent 35%);
+        background-attachment: fixed;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--panel-border);
+        margin-bottom: 1.5rem;
+    }
+
+    .header-title-wrap {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .header-title {
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: 2px;
+        background: linear-gradient(90deg, var(--cyan), var(--purple));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 0 20px rgba(0, 229, 255, 0.25);
+    }
+
+    .header-subtitle {
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        color: var(--dim);
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        margin-top: 0.25rem;
+    }
+
+    .status-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--mono);
+        font-size: 0.8rem;
+        padding: 6px 14px;
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 20px;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--red);
+        box-shadow: 0 0 8px var(--red);
+    }
+
+    .status-dot.connected {
+        background: var(--green);
+        box-shadow: 0 0 10px var(--green);
+    }
+
+    .main-grid {
+        display: grid;
+        grid-template-columns: 385px 1fr;
+        gap: 1.5rem;
+        flex: 1;
+    }
+
+    .panel {
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 16px;
+        padding: 1.25rem;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        box-shadow: 0 15px 35px -10px rgba(0,0,0,0.6);
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .panel-title {
+        font-size: 0.85rem;
+        font-weight: 800;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: #64748b;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        padding-bottom: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .panel-title span {
+        color: var(--cyan);
+        font-family: var(--mono);
+    }
+
+    canvas {
+        background: rgba(0, 0, 0, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+    }
+
+    .arena-container {
+        position: relative;
+    }
+
+    #arenaCanvas {
+        width: 100%;
+        aspect-ratio: 1;
+        image-rendering: auto;
+    }
+
+    /* Column layouts */
+    .column-left {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .column-right {
+        display: grid;
+        grid-template-rows: 1fr 280px;
+        gap: 1.5rem;
+    }
+
+    .right-top-grid {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 1.5rem;
+    }
+
+    /* Micro-meters and metrics */
+    .metric-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+
+    .metric-card {
+        background: rgba(0,0,0,0.3);
+        border: 1px solid rgba(255,255,255,0.04);
+        border-radius: 10px;
+        padding: 0.8rem;
+        text-align: center;
+    }
+
+    .metric-val {
+        font-family: var(--mono);
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .metric-lbl {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: #64748b;
+        margin-top: 0.25rem;
+    }
+
+    .chemical-gauge {
+        margin-bottom: 0.75rem;
+    }
+
+    .chemical-header {
+        display: flex;
+        justify-content: space-between;
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .chemical-track {
+        height: 8px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .chemical-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.1s linear;
+    }
+
+    .fill-da { background: linear-gradient(90deg, #f59e0b, var(--amber)); }
+    .fill-ne { background: linear-gradient(90deg, #ef4444, var(--red)); }
+    .fill-hunger { background: linear-gradient(90deg, #3b82f6, var(--blue)); }
+    .fill-reflex { background: linear-gradient(90deg, #d97706, #fbbf24); }
+    .fill-novelty { background: linear-gradient(90deg, #8b5cf6, var(--purple)); }
+    .fill-uncertain { background: linear-gradient(90deg, #0284c7, var(--cyan)); }
+
+    /* Brain & Heatmap layout */
+    #brainCanvas {
+        width: 100%;
+        height: 100%;
+        min-height: 380px;
+    }
+
+    #heatmapCanvas {
+        width: 100%;
+        aspect-ratio: 1;
+        image-rendering: pixelated;
+    }
+
+    .chart-container {
+        height: 200px;
+        position: relative;
+    }
+
+    /* Reflex Banner Indicator */
+    #reflexBanner {
+        padding: 0.5rem;
+        border-radius: 8px;
+        text-align: center;
+        font-family: var(--mono);
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 4px;
+        border: 1px solid var(--dim);
+        background: rgba(0,0,0,0.3);
+        color: var(--dim);
+        text-transform: uppercase;
+        transition: all 0.2s ease;
+    }
+
+    #reflexBanner.active {
+        border-color: var(--amber);
+        background: rgba(255, 184, 0, 0.15);
+        color: var(--amber);
+        text-shadow: 0 0 8px rgba(255, 184, 0, 0.6);
+        animation: pulse-reflex 0.4s infinite alternate;
+    }
+
+    @keyframes pulse-reflex {
+        from { box-shadow: 0 0 5px rgba(255, 184, 0, 0.2); }
+        to { box-shadow: 0 0 15px rgba(255, 184, 0, 0.5); }
+    }
+
+    /* Sleep / Memory Consolidation Banner */
+    #sleepBanner {
+        padding: 0.5rem;
+        border-radius: 8px;
+        text-align: center;
+        font-family: var(--mono);
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 4px;
+        border: 1px solid var(--dim);
+        background: rgba(0,0,0,0.3);
+        color: var(--dim);
+        text-transform: uppercase;
+        margin-top: 0.75rem;
+        display: none; /* Hidden by default */
+        transition: all 0.2s ease;
+    }
+
+    #sleepBanner.active {
+        display: block;
+        border-color: var(--purple);
+        background: rgba(191, 95, 255, 0.15);
+        color: var(--purple);
+        text-shadow: 0 0 8px rgba(191, 95, 255, 0.6);
+        animation: pulse-sleep 0.8s infinite alternate;
+    }
+
+    @keyframes pulse-sleep {
+        from { box-shadow: 0 0 5px rgba(191, 95, 255, 0.2); }
+        to { box-shadow: 0 0 20px rgba(191, 95, 255, 0.5); }
+    }
+
+    /* Interactive highlights */
+    .pain-flash {
+        animation: pain-anim 0.3s ease-out;
+    }
+
+    .joy-flash {
+        animation: joy-anim 0.3s ease-out;
+    }
+
+    @keyframes pain-anim {
+        0% { border-color: var(--red); box-shadow: 0 0 25px rgba(255, 45, 85, 0.4); }
+        100% { border-color: var(--panel-border); box-shadow: none; }
+    }
+
+    @keyframes joy-anim {
+        0% { border-color: var(--green); box-shadow: 0 0 25px rgba(0, 255, 136, 0.4); }
+        100% { border-color: var(--panel-border); box-shadow: none; }
+    }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-title-wrap">
+        <div class="header-title">PROJECT GENESIS // BOB</div>
+        <div class="header-subtitle">Tier 3 Phase C3 // Fristonian Active Inference & The Proprioceptive Self-Model</div>
+    </div>
+    <div class="status-badge">
+        <div id="statusDot" class="status-dot"></div>
+        <span id="statusText">CONNECTING...</span>
+    </div>
+</div>
+
+<div class="main-grid">
+    <!-- LEFT: Arena & Core Metrics -->
+    <div class="column-left">
+        <div class="panel" id="arenaPanel">
+            <div class="panel-title">Virtual Arena <span>Live Physarum Trails</span></div>
+            <div class="arena-container">
+                <canvas id="arenaCanvas" width="400" height="400"></canvas>
+            </div>
+            <div id="reflexBanner">Reflex Trigger Offline</div>
+            <div id="sleepBanner">Offline Consolidation Replay</div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">Endocrine & Senses <span>Real-Time Gauges</span></div>
+            <div class="chemical-gauge">
+                <div class="chemical-header">
+                    <span style="color:var(--amber)">DA (Dopamine - Olfactory Gradient)</span>
+                    <span id="val-da">0.00</span>
+                </div>
+                <div class="chemical-track"><div id="fill-da" class="chemical-fill fill-da" style="width: 0%"></div></div>
+            </div>
+            <div class="chemical-gauge">
+                <div class="chemical-header">
+                    <span style="color:var(--red)">NE (Norepinephrine - Wall Impact)</span>
+                    <span id="val-ne">0.00</span>
+                </div>
+                <div class="chemical-track"><div id="fill-ne" class="chemical-fill fill-ne" style="width: 0%"></div></div>
+            </div>
+            <div class="chemical-gauge">
+                <div class="chemical-header">
+                    <span style="color:var(--blue)">Hunger (Urgency Factor)</span>
+                    <span id="val-hunger">0.80</span>
+                </div>
+                <div class="chemical-track"><div id="fill-hunger" class="chemical-fill fill-hunger" style="width: 80%"></div></div>
+            </div>
+            <div class="chemical-gauge">
+                <div class="chemical-header">
+                    <span style="color:#d97706">Spinal Reflex Ratio (Avoidance)</span>
+                    <span id="val-reflex">0.0%</span>
+                </div>
+                <div class="chemical-track"><div id="fill-reflex" class="chemical-fill fill-reflex" style="width: 0%"></div></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">Proprioceptive Self-Model <span>Ego-Vector</span></div>
+            <div class="chemical-gauge">
+                <div class="chemical-header">
+                    <span style="color:var(--green)">Left Motor Health (ψL)</span>
+                    <span id="val-psi-l">1.00</span>
+                </div>
+                <div class="chemical-track"><div id="fill-psi-l" class="chemical-fill" style="width: 100%; background: linear-gradient(90deg, #10b981, var(--green));"></div></div>
+            </div>
+            <div class="chemical-gauge">
+                <div class="chemical-header">
+                    <span style="color:var(--green)">Right Motor Health (ψR)</span>
+                    <span id="val-psi-r">1.00</span>
+                </div>
+                <div class="chemical-track"><div id="fill-psi-r" class="chemical-fill" style="width: 100%; background: linear-gradient(90deg, #10b981, var(--green));"></div></div>
+            </div>
+            <div class="chemical-gauge">
+                <div class="chemical-header">
+                    <span style="color:var(--amber)">Traction Slip Ratio (ψS)</span>
+                    <span id="val-psi-s">0.00</span>
+                </div>
+                <div class="chemical-track"><div id="fill-psi-s" class="chemical-fill" style="width: 0%; background: linear-gradient(90deg, #fbbf24, var(--amber));"></div></div>
+            </div>
+            <div class="chemical-gauge">
+                <div class="chemical-header">
+                    <span style="color:var(--purple)">Torque Strain (ψT)</span>
+                    <span id="val-psi-t">0.00</span>
+                </div>
+                <div class="chemical-track"><div id="fill-psi-t" class="chemical-fill" style="width: 0%; background: linear-gradient(90deg, #c084fc, var(--purple));"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT: Brain Graph, Heatmap, and Statistics -->
+    <div class="column-right">
+        <div class="right-top-grid">
+            <div class="panel" id="brainPanel">
+                <div class="panel-title">32-Neuron Reservoir Graph <span>Cerebral Activity</span></div>
+                <canvas id="brainCanvas"></canvas>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Cortex Predictor & active inf <span>Fristonian Lobe</span></div>
+                
+                <div class="chemical-gauge" style="margin-top: 0.25rem;">
+                    <div class="chemical-header">
+                        <span style="color:var(--red)">Prediction Surprise (Δt)</span>
+                        <span id="val-surprise">0.00</span>
+                    </div>
+                    <div class="chemical-track"><div id="fill-surprise" class="chemical-fill" style="width: 0%; background: linear-gradient(90deg, #f87171, var(--red));"></div></div>
+                </div>
+                <div class="chemical-gauge">
+                    <div class="chemical-header">
+                        <span style="color:var(--cyan)">Cerebral Certainty (Ct)</span>
+                        <span id="val-certainty">1.00</span>
+                    </div>
+                    <div class="chemical-track"><div id="fill-certainty" class="chemical-fill" style="width: 100%; background: linear-gradient(90deg, #22d3ee, var(--cyan));"></div></div>
+                </div>
+                <div class="chemical-gauge">
+                    <div class="chemical-header">
+                        <span style="color:var(--purple)">HDC Memory Familiarity</span>
+                        <span id="val-familiarity">0.00</span>
+                    </div>
+                    <div class="chemical-track"><div id="fill-familiarity" class="chemical-fill" style="width: 0%; background: linear-gradient(90deg, #c084fc, var(--purple));"></div></div>
+                </div>
+                <div class="chemical-gauge">
+                    <div class="chemical-header">
+                        <span style="color:var(--amber)">Actuator Speed Drive</span>
+                        <span id="val-speed-drive">0.80</span>
+                    </div>
+                    <div class="chemical-track"><div id="fill-speed-drive" class="chemical-fill" style="width: 80%; background: linear-gradient(90deg, #fbbf24, var(--amber));"></div></div>
+                </div>
+
+                <div class="panel-title" style="margin-top: 0.5rem; border-bottom: none; padding-bottom: 0;">Synaptic Heatmap <span>W (32x32)</span></div>
+                <canvas id="heatmapCanvas" width="32" height="32" style="flex: 1; margin-bottom: 0.5rem;"></canvas>
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="metric-val" id="stat-episode">0</div>
+                        <div class="metric-lbl">Episode</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-val" id="stat-steps">0</div>
+                        <div class="metric-lbl">Frame Step</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">Curriculum Progress Curve <span>Steps to Food</span></div>
+            <div class="chart-container">
+                <canvas id="learningChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- STYLING & COLORS ---
+    const COLORS = {
+        cyan: '#00e5ff',
+        purple: '#bf5fff',
+        red: '#ff2d55',
+        green: '#00ff88',
+        amber: '#ffb800',
+        dim: '#475569',
+        white: '#ffffff'
+    };
+
+    // --- CHART.JS CONFIG ---
+    const ctx = document.getElementById('learningChart').getContext('2d');
+    const chartGradient = ctx.createLinearGradient(0, 0, 0, 180);
+    chartGradient.addColorStop(0, 'rgba(0, 229, 255, 0.25)');
+    chartGradient.addColorStop(1, 'rgba(0, 229, 255, 0.0)');
+
+    const learningChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Steps to reach food',
+                data: [],
+                borderColor: COLORS.cyan,
+                backgroundColor: chartGradient,
+                borderWidth: 2,
+                pointRadius: 4,
+                pointBackgroundColor: COLORS.cyan,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255,255,255,0.03)' },
+                    ticks: { color: COLORS.dim, font: { family: 'Space Mono', size: 10 } }
+                },
+                y: {
+                    grid: { color: 'rgba(255,255,255,0.03)' },
+                    ticks: { color: COLORS.dim, font: { family: 'Space Mono', size: 10 } }
+                }
+            }
+        }
+    });
+
+    // --- WEB GL & CANVAS DRAWING SYSTEMS ---
+    const arenaCanvas = document.getElementById('arenaCanvas');
+    const actx = arenaCanvas.getContext('2d');
+    const brainCanvas = document.getElementById('brainCanvas');
+    const bctx = brainCanvas.getContext('2d');
+    const heatmapCanvas = document.getElementById('heatmapCanvas');
+    const hctx = heatmapCanvas.getContext('2d');
+
+    // Resize brain canvas dynamically
+    function resizeBrainCanvas() {
+        const rect = brainCanvas.parentElement.getBoundingClientRect();
+        brainCanvas.width = rect.width - 40;
+        brainCanvas.height = rect.height - 70;
+    }
+    window.addEventListener('resize', resizeBrainCanvas);
+    setTimeout(resizeBrainCanvas, 100);
+
+    // Arena Trajectory Trail
+    let trajectoryHistory = [];
+
+    function drawArena(pos, food, nav_signal) {
+        const w = arenaCanvas.width;
+        const h = arenaCanvas.height;
+        actx.clearRect(0, 0, w, h);
+
+        // 1. Draw Physarum Slime Mold Tubes
+        if(nav_signal && nav_signal.length > 0) {
+            const rows = nav_signal.length;
+            const cols = nav_signal[0].length;
+            const cellW = (w - 20) / rows;
+            const cellH = (h - 20) / cols;
+            
+            actx.shadowBlur = 0;
+            for(let i=0; i<rows; i++) {
+                for(let j=0; j<cols; j++) {
+                    const val = nav_signal[i][j];
+                    if(val > 0.015) {
+                        // Map grid to canvas pixel coordinates (Y is inverted in MuJoCo physics coordinates)
+                        const px = i * cellW + 10;
+                        const py = (cols - 1 - j) * cellH + 10;
+                        actx.fillStyle = `rgba(255, 184, 0, ${val * 0.45})`; // Glowing golden-yellow slime mold tubes
+                        actx.fillRect(px, py, cellW - 0.5, cellH - 0.5);
+                    }
+                }
+            }
+        }
+
+        // Grid Lines
+        actx.strokeStyle = 'rgba(255,255,255,0.02)';
+        actx.lineWidth = 1;
+        for(let i=1; i<10; i++) {
+            actx.beginPath(); actx.moveTo((i/10)*w, 0); actx.lineTo((i/10)*w, h); actx.stroke();
+            actx.beginPath(); actx.moveTo(0, (i/10)*h); actx.lineTo(w, (i/10)*h); actx.stroke();
+        }
+
+        // Bounding Walls
+        actx.strokeStyle = 'rgba(255,255,255,0.08)';
+        actx.lineWidth = 2;
+        actx.strokeRect(10, 10, w-20, h-20);
+
+        // Center Obstacle
+        actx.fillStyle = 'rgba(255,255,255,0.06)';
+        actx.strokeStyle = 'rgba(255,255,255,0.18)';
+        actx.beginPath();
+        actx.arc(w/2, h/2, 0.7 * (w/10), 0, Math.PI*2);
+        actx.fill();
+        actx.stroke();
+
+        // Convert coordinates from MuJoCo [-5.0, 5.0] to canvas pixel space
+        function toPx(x, y) {
+            const px = ((x + 5.0) / 10.0) * (w - 20) + 10;
+            const py = ((-y + 5.0) / 10.0) * (h - 20) + 10; // Inverted Y axis
+            return [px, py];
+        }
+
+        // Draw trajectory trail
+        if(pos) {
+            trajectoryHistory.push([...pos]);
+            if(trajectoryHistory.length > 250) trajectoryHistory.shift();
+
+            actx.strokeStyle = 'rgba(0, 229, 255, 0.45)';
+            actx.lineWidth = 2.5;
+            actx.beginPath();
+            trajectoryHistory.forEach((p, idx) => {
+                const [px, py] = toPx(p[0], p[1]);
+                if(idx === 0) actx.moveTo(px, py);
+                else actx.lineTo(px, py);
+            });
+            actx.stroke();
+        }
+
+        // Draw Food
+        if(food) {
+            const [fx, fy] = toPx(food[0], food[1]);
+            actx.shadowBlur = 15;
+            actx.shadowColor = COLORS.green;
+            actx.fillStyle = COLORS.green;
+            actx.beginPath();
+            actx.arc(fx, fy, 8, 0, Math.PI*2);
+            actx.fill();
+            actx.shadowBlur = 0;
+        }
+
+        // Draw Blob
+        if(pos) {
+            const [bx, by] = toPx(pos[0], pos[1]);
+            actx.shadowBlur = 15;
+            actx.shadowColor = COLORS.cyan;
+            actx.fillStyle = COLORS.cyan;
+            actx.beginPath();
+            actx.arc(bx, by, 10, 0, Math.PI*2);
+            actx.fill();
+            
+            // Core
+            actx.fillStyle = '#ffffff';
+            actx.beginPath();
+            actx.arc(bx, by, 3, 0, Math.PI*2);
+            actx.fill();
+            actx.shadowBlur = 0;
+        }
+    }
+
+    // Interactive Node Positions for the 32 Neurons
+    let nodePositions = [];
+    function initBrainNodes(w, h) {
+        nodePositions = [];
+        // Layout in a beautifully integrated 3D-like cylinder projection
+        for(let i=0; i<32; i++) {
+            const theta = (i / 32) * Math.PI * 2;
+            const radiusX = w * 0.4;
+            const radiusY = h * 0.35;
+            // Add slight spatial noise for realistic biological look
+            const offset = (i % 2 === 0) ? 0.9 : 1.1;
+            nodePositions.push({
+                x: w/2 + Math.cos(theta) * radiusX * offset,
+                y: h/2 + Math.sin(theta) * radiusY * offset
+            });
+        }
+    }
+
+    function drawBrain(states, W) {
+        const w = brainCanvas.width;
+        const h = brainCanvas.height;
+        bctx.clearRect(0, 0, w, h);
+
+        if(nodePositions.length === 0) {
+            initBrainNodes(w, h);
+        }
+
+        // Draw connection weights (only synapses > 0.35 to prevent clutter)
+        if(W) {
+            for(let i=0; i<32; i++) {
+                for(let j=0; j<32; j++) {
+                    const weight = W[i][j];
+                    if(Math.abs(weight) > 0.35) {
+                        bctx.beginPath();
+                        bctx.moveTo(nodePositions[i].x, nodePositions[i].y);
+                        bctx.lineTo(nodePositions[j].x, nodePositions[j].y);
+                        bctx.lineWidth = Math.abs(weight) * 0.8;
+                        bctx.strokeStyle = weight > 0 ? `rgba(0, 255, 136, ${Math.abs(weight)*0.15})` : `rgba(255, 45, 85, ${Math.abs(weight)*0.15})`;
+                        bctx.stroke();
+                    }
+                }
+            }
+        }
+
+        // Draw firing neurons
+        if(states) {
+            states.forEach((val, i) => {
+                const node = nodePositions[i];
+                const activity = Math.abs(val);
+
+                // Neural glow
+                if(activity > 0.05) {
+                    bctx.shadowBlur = activity * 12;
+                    bctx.shadowColor = val > 0 ? COLORS.cyan : COLORS.purple;
+                }
+                
+                bctx.fillStyle = val > 0 ? `rgba(0, 229, 255, ${0.4 + activity * 0.6})` : `rgba(191, 95, 255, ${0.4 + activity * 0.6})`;
+                bctx.beginPath();
+                bctx.arc(node.x, node.y, 4 + activity * 8, 0, Math.PI*2);
+                bctx.fill();
+                bctx.shadowBlur = 0;
+            });
+        }
+    }
+
+    function drawHeatmap(W) {
+        if(!W) return;
+        const img = hctx.createImageData(32, 32);
+        for(let i=0; i<32; i++) {
+            for(let j=0; j<32; j++) {
+                const val = W[i][j];
+                const idx = (i * 32 + j) * 4;
+                const intensity = Math.min(255, Math.round(Math.abs(val) * 160));
+                
+                if(val > 0) {
+                    img.data[idx] = 0; // R
+                    img.data[idx+1] = intensity; // G
+                    img.data[idx+2] = Math.round(intensity * 0.5); // B
+                } else {
+                    img.data[idx] = intensity; // R
+                    img.data[idx+1] = 0; // G
+                    img.data[idx+2] = Math.round(intensity * 0.3); // B
+                }
+                img.data[idx+3] = 255; // A
+            }
+        }
+        hctx.putImageData(img, 0, 0);
+    }
+
+    // --- WEBSOCKET CONNECTION ---
+    let ws = null;
+    let reconnectTimeout = null;
+
+    function connect() {
+        ws = new WebSocket('ws://localhost:8766');
+
+        ws.onopen = () => {
+            document.getElementById('statusDot').classList.add('connected');
+            document.getElementById('statusText').innerText = 'CONNECTED';
+            console.log('Connected to Blob Mind Telemetry');
+        };
+
+        ws.onclose = () => {
+            document.getElementById('statusDot').classList.remove('connected');
+            document.getElementById('statusText').innerText = 'DISCONNECTED';
+            ws = null;
+            clearTimeout(reconnectTimeout);
+            reconnectTimeout = setTimeout(connect, 1500); // Reconnection loop
+        };
+
+        ws.onerror = () => {
+            ws.close();
+        };
+
+        ws.onmessage = (msg) => {
+            try {
+                const data = JSON.parse(msg.data);
+
+                // Update Gauges
+                document.getElementById('val-da').innerText = data.da.toFixed(3);
+                document.getElementById('fill-da').style.width = `${Math.min(100, Math.max(0, (data.da + 0.2) * 200))}%`; // Shift gradient range for visual representation
+                
+                document.getElementById('val-ne').innerText = data.ne.toFixed(2);
+                document.getElementById('fill-ne').style.width = `${data.ne * 100}%`;
+                
+                document.getElementById('val-hunger').innerText = data.hunger.toFixed(2);
+                document.getElementById('fill-hunger').style.width = `${data.hunger * 100}%`;
+
+                document.getElementById('val-reflex').innerText = (data.reflex_ratio * 100).toFixed(1) + '%';
+                document.getElementById('fill-reflex').style.width = `${data.reflex_ratio * 100}%`;
+
+                // Proprioceptive Self-Model (Ego-Vector)
+                if (data.ego_state && data.ego_state.length >= 4) {
+                    const [psi_L, psi_R, psi_S, psi_T] = data.ego_state;
+                    
+                    document.getElementById('val-psi-l').innerText = psi_L.toFixed(3);
+                    document.getElementById('fill-psi-l').style.width = `${psi_L * 100}%`;
+                    document.getElementById('fill-psi-l').style.background = psi_L < 0.6 ? 'linear-gradient(90deg, #ef4444, #f87171)' : 'linear-gradient(90deg, #10b981, var(--green))';
+                    
+                    document.getElementById('val-psi-r').innerText = psi_R.toFixed(3);
+                    document.getElementById('fill-psi-r').style.width = `${psi_R * 100}%`;
+                    document.getElementById('fill-psi-r').style.background = psi_R < 0.6 ? 'linear-gradient(90deg, #ef4444, #f87171)' : 'linear-gradient(90deg, #10b981, var(--green))';
+                    
+                    document.getElementById('val-psi-s').innerText = psi_S.toFixed(3);
+                    document.getElementById('fill-psi-s').style.width = `${Math.min(100, psi_S * 100)}%`;
+                    document.getElementById('fill-psi-s').style.background = psi_S > 0.4 ? 'linear-gradient(90deg, #f59e0b, #ef4444)' : 'linear-gradient(90deg, #34d399, var(--amber))';
+                    
+                    document.getElementById('val-psi-t').innerText = psi_T.toFixed(3);
+                    document.getElementById('fill-psi-t').style.width = `${psi_T * 100}%`;
+                }
+
+                // Cortex Predictor & Active Inference Indicators
+                document.getElementById('val-surprise').innerText = data.dreamer_loss.toFixed(4);
+                document.getElementById('fill-surprise').style.width = `${Math.min(100, data.dreamer_loss * 200)}%`;
+
+                document.getElementById('val-certainty').innerText = data.dreamer_surprise.toFixed(4);
+                document.getElementById('fill-certainty').style.width = `${data.dreamer_surprise * 100}%`;
+
+                document.getElementById('val-familiarity').innerText = data.hdc_familiarity.toFixed(4);
+                document.getElementById('fill-familiarity').style.width = `${data.hdc_familiarity * 100}%`;
+
+                document.getElementById('val-speed-drive').innerText = data.speed_drive.toFixed(3);
+                document.getElementById('fill-speed-drive').style.width = `${data.speed_drive * 100}%`;
+
+                // Spinal Reflex Override active banner
+                const reflexBanner = document.getElementById('reflexBanner');
+                if(data.reflex_fired) {
+                    reflexBanner.className = 'active';
+                    reflexBanner.innerText = 'Reflex Override ACTIVE';
+                } else {
+                    reflexBanner.className = '';
+                    reflexBanner.innerText = 'Reflex Override Offline';
+                }
+
+                // Offline Sleep Replay Active Banner
+                const sleepBanner = document.getElementById('sleepBanner');
+                if(data.is_sleeping) {
+                    sleepBanner.className = 'active';
+                    sleepBanner.innerText = 'CONSOLIDATING TRAUMA...';
+                    document.getElementById('statusDot').className = 'status-dot';
+                    document.getElementById('statusDot').style.background = 'var(--purple)';
+                    document.getElementById('statusDot').style.boxShadow = '0 0 10px var(--purple)';
+                    document.getElementById('statusText').innerText = 'SLEEPING';
+                } else {
+                    sleepBanner.className = '';
+                    sleepBanner.style.display = 'none';
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        document.getElementById('statusDot').className = 'status-dot connected';
+                        document.getElementById('statusDot').style.background = '';
+                        document.getElementById('statusDot').style.boxShadow = '';
+                        document.getElementById('statusText').innerText = 'CONNECTED';
+                    }
+                }
+
+                // Interactive flashes on key events
+                const arenaPanel = document.getElementById('arenaPanel');
+                if(data.da > 1.0) {
+                    arenaPanel.className = 'panel joy-flash';
+                    // Reset trail on food eaten
+                    trajectoryHistory = [];
+                } else if(data.ne > 0.8) {
+                    arenaPanel.className = 'panel pain-flash';
+                } else {
+                    arenaPanel.className = 'panel';
+                }
+
+                // General Stats
+                document.getElementById('stat-episode').innerText = data.episode;
+                document.getElementById('stat-steps').innerText = data.steps_since_food;
+
+                // Render canvases
+                drawArena(data.pos, data.food, data.nav_signal);
+                drawBrain(data.neuron_states, data.W);
+                drawHeatmap(data.W);
+
+                // Update Learning Progress Plot
+                if (data.steps_to_food_history && data.steps_to_food_history.length > 0) {
+                    learningChart.data.labels = data.steps_to_food_history.map((_, i) => `Ep ${i + 1}`);
+                    learningChart.data.datasets[0].data = data.steps_to_food_history;
+                    learningChart.update();
+                }
+
+            } catch (err) {
+                console.error("Telemetry parse/render error:", err);
+            }
+        };
+    }
+
+    connect();
+</script>
+</body>
+</html>

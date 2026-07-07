@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CARL GENESIS — Cybernetic Dashboard</title>
+    <meta name="description" content="Real-time telemetry dashboard for CARL GENESIS autonomous agent. Displays live homeostatic drives, proprioceptive ego-vector, 32-neuron reservoir, and arena map.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════════════════════════════════════════════════════════════
+           CARL GENESIS — Premium Dark Glassmorphism Design System
+           ═══════════════════════════════════════════════════════════════════ */
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: rgba(17, 24, 39, 0.75);
+            --bg-card-hover: rgba(30, 41, 59, 0.85);
+            --border-glass: rgba(99, 102, 241, 0.18);
+            --border-glow: rgba(99, 102, 241, 0.35);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-indigo: #818cf8;
+            --accent-violet: #a78bfa;
+            --accent-cyan: #22d3ee;
+            --accent-emerald: #34d399;
+            --accent-amber: #fbbf24;
+            --accent-rose: #fb7185;
+            --accent-red: #ef4444;
+            --accent-orange: #f97316;
+            --accent-blue: #3b82f6;
+            --gradient-hero: linear-gradient(135deg, #818cf8 0%, #a78bfa 50%, #c084fc 100%);
+            --gradient-danger: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+            --gradient-success: linear-gradient(135deg, #34d399 0%, #22d3ee 100%);
+            --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --radius-sm: 6px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* ── Background Gradient Mesh ───────────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background:
+                radial-gradient(ellipse at 20% 30%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(167, 139, 250, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 90%, rgba(34, 211, 238, 0.04) 0%, transparent 40%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ── Header Bar ─────────────────────────────────────────────── */
+        #header {
+            position: relative; z-index: 10;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 28px;
+            background: rgba(10, 14, 26, 0.92);
+            border-bottom: 1px solid var(--border-glass);
+            backdrop-filter: blur(20px);
+        }
+        #header h1 {
+            font-size: 1.15rem; font-weight: 800;
+            letter-spacing: 2.5px; text-transform: uppercase;
+            background: var(--gradient-hero);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        #header .subtitle {
+            font-size: 0.68rem; font-weight: 500;
+            color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase;
+        }
+        #connection-badge {
+            display: flex; align-items: center; gap: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem; font-weight: 500;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: rgba(52, 211, 153, 0.1);
+            border: 1px solid rgba(52, 211, 153, 0.3);
+            color: var(--accent-emerald);
+            transition: all 0.4s ease;
+        }
+        #connection-badge.disconnected {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: var(--accent-red);
+        }
+        #connection-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--accent-emerald);
+            box-shadow: 0 0 8px var(--accent-emerald);
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        #connection-badge.disconnected #connection-dot {
+            background: var(--accent-red);
+            box-shadow: 0 0 8px var(--accent-red);
+            animation: none;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        /* ── Grid Layout ────────────────────────────────────────────── */
+        #dashboard {
+            position: relative; z-index: 5;
+            display: grid;
+            grid-template-columns: 320px 1fr 320px;
+            grid-template-rows: auto auto;
+            gap: 16px;
+            padding: 16px 20px;
+            max-height: calc(100vh - 60px);
+        }
+
+        /* ── Glass Card ─────────────────────────────────────────────── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            backdrop-filter: blur(16px);
+            box-shadow: var(--shadow-card);
+            padding: 18px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            border-color: var(--border-glow);
+            box-shadow: var(--shadow-card), var(--shadow-glow);
+        }
+        .card-title {
+            font-size: 0.65rem; font-weight: 700;
+            letter-spacing: 1.8px; text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .card-title .icon { font-size: 0.85rem; }
+
+        /* ── Stats Row ──────────────────────────────────────────────── */
+        #stats-row {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+        }
+        .stat-pill {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            backdrop-filter: blur(12px);
+            padding: 12px 14px;
+            text-align: center;
+            transition: transform 0.2s ease, border-color 0.3s ease;
+        }
+        .stat-pill:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-glow);
+        }
+        .stat-pill .label {
+            font-size: 0.6rem; font-weight: 600;
+            letter-spacing: 1.2px; text-transform: uppercase;
+            color: var(--text-muted); margin-bottom: 4px;
+        }
+        .stat-pill .value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.3rem; font-weight: 700;
+            color: var(--text-primary);
+        }
+        .stat-pill .unit {
+            font-size: 0.6rem; color: var(--text-secondary); margin-left: 2px;
+        }
+
+        /* ── Drive Bar ──────────────────────────────────────────────── */
+        .drive-item { margin-bottom: 12px; }
+        .drive-label {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 5px;
+        }
+        .drive-label .name {
+            font-size: 0.72rem; font-weight: 600; color: var(--text-secondary);
+        }
+        .drive-label .val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem; font-weight: 700;
+        }
+        .drive-track {
+            width: 100%; height: 8px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 4px; overflow: hidden;
+        }
+        .drive-fill {
+            height: 100%; border-radius: 4px;
+            transition: width 0.25s ease-out;
+            min-width: 2px;
+        }
+
+        /* ── Ego-Vector Gauge ───────────────────────────────────────── */
+        .ego-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .ego-gauge {
+            text-align: center;
+            padding: 10px 8px;
+            background: rgba(255,255,255,0.03);
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .ego-gauge .ego-label {
+            font-size: 0.6rem; font-weight: 700;
+            letter-spacing: 1px; text-transform: uppercase;
+            color: var(--text-muted); margin-bottom: 6px;
+        }
+        .ego-gauge .ego-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem; font-weight: 800;
+        }
+        .ego-gauge .ego-bar-track {
+            width: 100%; height: 4px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 2px; overflow: hidden;
+            margin-top: 6px;
+        }
+        .ego-gauge .ego-bar-fill {
+            height: 100%; border-radius: 2px;
+            transition: width 0.25s ease-out;
+        }
+
+        /* ── Arena Canvas ───────────────────────────────────────────── */
+        #arena-card { grid-row: span 1; }
+        #arena-canvas {
+            width: 100%; aspect-ratio: 1;
+            border-radius: var(--radius-md);
+            background: #080c16;
+            border: 1px solid var(--border-glass);
+            display: block;
+        }
+
+        /* ── Reservoir Canvas ───────────────────────────────────────── */
+        #reservoir-canvas {
+            width: 100%; height: 120px;
+            border-radius: var(--radius-md);
+            background: #080c16;
+            border: 1px solid var(--border-glass);
+            display: block;
+        }
+
+        /* ── Surprise / Certainty Row ───────────────────────────────── */
+        .metric-row {
+            display: flex; gap: 12px; margin-top: 10px;
+        }
+        .metric-box {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            background: rgba(255,255,255,0.03);
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .metric-box .m-label {
+            font-size: 0.58rem; font-weight: 700;
+            letter-spacing: 1px; text-transform: uppercase;
+            color: var(--text-muted); margin-bottom: 3px;
+        }
+        .metric-box .m-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem; font-weight: 700;
+        }
+
+        /* ── Steps History Sparkline ────────────────────────────────── */
+        #sparkline-canvas {
+            width: 100%; height: 60px;
+            border-radius: var(--radius-sm);
+            display: block;
+            margin-top: 10px;
+        }
+
+        /* ── Disconnected Overlay ───────────────────────────────────── */
+        #disconnect-overlay {
+            position: fixed; inset: 0; z-index: 1000;
+            background: rgba(10, 14, 26, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 16px;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+            pointer-events: all;
+        }
+        #disconnect-overlay.hidden {
+            opacity: 0; pointer-events: none;
+        }
+        #disconnect-overlay .disc-icon {
+            font-size: 3rem;
+            animation: spin-slow 3s linear infinite;
+        }
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        #disconnect-overlay .disc-text {
+            font-size: 1rem; font-weight: 700;
+            letter-spacing: 2px; text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        #disconnect-overlay .disc-sub {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem; color: var(--text-muted);
+        }
+
+        /* ── Responsive ─────────────────────────────────────────────── */
+        @media (max-width: 1100px) {
+            #dashboard {
+                grid-template-columns: 1fr 1fr;
+            }
+            #stats-row { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 700px) {
+            #dashboard {
+                grid-template-columns: 1fr;
+            }
+            #stats-row { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══ Header ═══════════════════════════════════════════════════════ -->
+<div id="header">
+    <div>
+        <h1>CARL GENESIS</h1>
+        <div class="subtitle">Fristonian Active Inference Telemetry — Mark VIII</div>
+    </div>
+    <div id="connection-badge" class="disconnected">
+        <div id="connection-dot"></div>
+        <span id="connection-text">DISCONNECTED</span>
+    </div>
+</div>
+
+<!-- ═══ Disconnected Overlay ═════════════════════════════════════════ -->
+<div id="disconnect-overlay">
+    <div class="disc-icon">⟳</div>
+    <div class="disc-text">Awaiting Telemetry Link</div>
+    <div class="disc-sub" id="reconnect-info">Connecting to ws://localhost:8766 …</div>
+</div>
+
+<!-- ═══ Dashboard Grid ═══════════════════════════════════════════════ -->
+<div id="dashboard">
+
+    <!-- ── Stats Row ──────────────────────────────────────────── -->
+    <div id="stats-row">
+        <div class="stat-pill">
+            <div class="label">Episode</div>
+            <div class="value" id="s-episode">0</div>
+        </div>
+        <div class="stat-pill">
+            <div class="label">Steps</div>
+            <div class="value" id="s-steps">0</div>
+        </div>
+        <div class="stat-pill">
+            <div class="label">Speed</div>
+            <div class="value"><span id="s-speed">0.00</span><span class="unit">m/s</span></div>
+        </div>
+        <div class="stat-pill">
+            <div class="label">Sigma (σ)</div>
+            <div class="value" id="s-sigma">0.00</div>
+        </div>
+        <div class="stat-pill">
+            <div class="label">Free Energy</div>
+            <div class="value" id="s-fe">0.00</div>
+        </div>
+        <div class="stat-pill">
+            <div class="label">HDC Familiarity</div>
+            <div class="value" id="s-hdc">0.00</div>
+        </div>
+    </div>
+
+    <!-- ── Left Column: Drives + Ego-Vector ───────────────────── -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+        <!-- Homeostatic Drives -->
+        <div class="card" id="drives-card">
+            <div class="card-title"><span class="icon">♥</span> Homeostatic Drives</div>
+            <div class="drive-item">
+                <div class="drive-label">
+                    <span class="name">🍎 Hunger</span>
+                    <span class="val" id="d-hunger-v" style="color:var(--accent-amber)">0.00</span>
+                </div>
+                <div class="drive-track"><div class="drive-fill" id="d-hunger" style="background:var(--accent-amber);width:0%"></div></div>
+            </div>
+            <div class="drive-item">
+                <div class="drive-label">
+                    <span class="name">⚡ Dopamine</span>
+                    <span class="val" id="d-da-v" style="color:var(--accent-emerald)">0.00</span>
+                </div>
+                <div class="drive-track"><div class="drive-fill" id="d-da" style="background:var(--accent-emerald);width:0%"></div></div>
+            </div>
+            <div class="drive-item">
+                <div class="drive-label">
+                    <span class="name">🔴 Cortisol</span>
+                    <span class="val" id="d-cort-v" style="color:var(--accent-rose)">0.00</span>
+                </div>
+                <div class="drive-track"><div class="drive-fill" id="d-cort" style="background:var(--accent-rose);width:0%"></div></div>
+            </div>
+            <div class="drive-item">
+                <div class="drive-label">
+                    <span class="name">🔵 Norepinephrine</span>
+                    <span class="val" id="d-ne-v" style="color:var(--accent-cyan)">0.00</span>
+                </div>
+                <div class="drive-track"><div class="drive-fill" id="d-ne" style="background:var(--accent-cyan);width:0%"></div></div>
+            </div>
+            <div class="drive-item">
+                <div class="drive-label">
+                    <span class="name">😴 Fatigue</span>
+                    <span class="val" id="d-fatigue-v" style="color:var(--accent-violet)">0.00</span>
+                </div>
+                <div class="drive-track"><div class="drive-fill" id="d-fatigue" style="background:var(--accent-violet);width:0%"></div></div>
+            </div>
+            <div class="drive-item">
+                <div class="drive-label">
+                    <span class="name">🏃 Speed Drive</span>
+                    <span class="val" id="d-spd-v" style="color:var(--accent-blue)">0.00</span>
+                </div>
+                <div class="drive-track"><div class="drive-fill" id="d-spd" style="background:var(--accent-blue);width:0%"></div></div>
+            </div>
+        </div>
+
+        <!-- Proprioceptive Ego-Vector -->
+        <div class="card" id="ego-card">
+            <div class="card-title"><span class="icon">🦾</span> Ego-Vector ψ</div>
+            <div class="ego-grid">
+                <div class="ego-gauge">
+                    <div class="ego-label">ψ_L (Left)</div>
+                    <div class="ego-value" id="ego-l" style="color:var(--accent-emerald)">1.00</div>
+                    <div class="ego-bar-track"><div class="ego-bar-fill" id="ego-l-bar" style="background:var(--accent-emerald);width:100%"></div></div>
+                </div>
+                <div class="ego-gauge">
+                    <div class="ego-label">ψ_R (Right)</div>
+                    <div class="ego-value" id="ego-r" style="color:var(--accent-emerald)">1.00</div>
+                    <div class="ego-bar-track"><div class="ego-bar-fill" id="ego-r-bar" style="background:var(--accent-emerald);width:100%"></div></div>
+                </div>
+                <div class="ego-gauge">
+                    <div class="ego-label">ψ_S (Slip)</div>
+                    <div class="ego-value" id="ego-s" style="color:var(--accent-cyan)">0.00</div>
+                    <div class="ego-bar-track"><div class="ego-bar-fill" id="ego-s-bar" style="background:var(--accent-cyan);width:0%"></div></div>
+                </div>
+                <div class="ego-gauge">
+                    <div class="ego-label">ψ_T (Strain)</div>
+                    <div class="ego-value" id="ego-t" style="color:var(--accent-amber)">0.00</div>
+                    <div class="ego-bar-track"><div class="ego-bar-fill" id="ego-t-bar" style="background:var(--accent-amber);width:0%"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Center Column: Arena Map ───────────────────────────── -->
+    <div class="card" id="arena-card">
+        <div class="card-title"><span class="icon">🗺</span> Arena Map — Estimated State</div>
+        <canvas id="arena-canvas" width="600" height="600"></canvas>
+        <div class="metric-row">
+            <div class="metric-box">
+                <div class="m-label">Surprise Δ</div>
+                <div class="m-value" id="m-surprise" style="color:var(--accent-orange)">0.000</div>
+            </div>
+            <div class="metric-box">
+                <div class="m-label">Certainty C</div>
+                <div class="m-value" id="m-certainty" style="color:var(--accent-cyan)">1.000</div>
+            </div>
+            <div class="metric-box">
+                <div class="m-label">Reflex</div>
+                <div class="m-value" id="m-reflex" style="color:var(--accent-rose)">OFF</div>
+            </div>
+            <div class="metric-box">
+                <div class="m-label">Sleep</div>
+                <div class="m-value" id="m-sleep" style="color:var(--accent-violet)">AWAKE</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Right Column: Reservoir + History ───────────────────── -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+        <!-- 32-Neuron Reservoir Heatmap -->
+        <div class="card" id="reservoir-card">
+            <div class="card-title"><span class="icon">🧠</span> 32-Neuron Reservoir</div>
+            <canvas id="reservoir-canvas" width="320" height="120"></canvas>
+        </div>
+
+        <!-- Navigation Signal -->
+        <div class="card" id="nav-card">
+            <div class="card-title"><span class="icon">🧭</span> Navigation Vector</div>
+            <canvas id="nav-canvas" width="280" height="140" style="width:100%;height:140px;display:block;border-radius:var(--radius-md);background:#080c16;border:1px solid var(--border-glass);"></canvas>
+        </div>
+
+        <!-- Steps-to-Food History -->
+        <div class="card" id="history-card">
+            <div class="card-title"><span class="icon">📈</span> Steps-to-Food History</div>
+            <canvas id="sparkline-canvas" width="280" height="60"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     JAVASCRIPT — WebSocket Telemetry Engine
+     ═══════════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+    'use strict';
+
+    // ── DOM References ──────────────────────────────────────────────
+    const els = {
+        overlay:     document.getElementById('disconnect-overlay'),
+        badge:       document.getElementById('connection-badge'),
+        badgeDot:    document.getElementById('connection-dot'),
+        badgeText:   document.getElementById('connection-text'),
+        reconnInfo:  document.getElementById('reconnect-info'),
+        // Stats pills
+        episode:     document.getElementById('s-episode'),
+        steps:       document.getElementById('s-steps'),
+        speed:       document.getElementById('s-speed'),
+        sigma:       document.getElementById('s-sigma'),
+        fe:          document.getElementById('s-fe'),
+        hdc:         document.getElementById('s-hdc'),
+        // Drives
+        hunger:      document.getElementById('d-hunger'),
+        hungerV:     document.getElementById('d-hunger-v'),
+        da:          document.getElementById('d-da'),
+        daV:         document.getElementById('d-da-v'),
+        cort:        document.getElementById('d-cort'),
+        cortV:       document.getElementById('d-cort-v'),
+        ne:          document.getElementById('d-ne'),
+        neV:         document.getElementById('d-ne-v'),
+        fatigue:     document.getElementById('d-fatigue'),
+        fatigueV:    document.getElementById('d-fatigue-v'),
+        spd:         document.getElementById('d-spd'),
+        spdV:        document.getElementById('d-spd-v'),
+        // Ego
+        egoL:        document.getElementById('ego-l'),
+        egoR:        document.getElementById('ego-r'),
+        egoS:        document.getElementById('ego-s'),
+        egoT:        document.getElementById('ego-t'),
+        egoLBar:     document.getElementById('ego-l-bar'),
+        egoRBar:     document.getElementById('ego-r-bar'),
+        egoSBar:     document.getElementById('ego-s-bar'),
+        egoTBar:     document.getElementById('ego-t-bar'),
+        // Metrics
+        surprise:    document.getElementById('m-surprise'),
+        certainty:   document.getElementById('m-certainty'),
+        reflex:      document.getElementById('m-reflex'),
+        sleep:       document.getElementById('m-sleep'),
+        // Canvases
+        arena:       document.getElementById('arena-canvas'),
+        reservoir:   document.getElementById('reservoir-canvas'),
+        sparkline:   document.getElementById('sparkline-canvas'),
+        nav:         document.getElementById('nav-canvas'),
+    };
+
+    // ── Arena Canvas Context ────────────────────────────────────────
+    const arenaCtx = els.arena.getContext('2d');
+    const resCtx   = els.reservoir.getContext('2d');
+    const sparkCtx = els.sparkline.getContext('2d');
+    const navCtx   = els.nav.getContext('2d');
+
+    // ── Arena State ─────────────────────────────────────────────────
+    const ARENA_WORLD = 10.0; // -5 to +5 meters
+    const trail = [];         // Bob's position trail
+    const MAX_TRAIL = 300;
+
+    // ── Latest State ────────────────────────────────────────────────
+    let state = null;
+
+    // ════════════════════════════════════════════════════════════════
+    //  WebSocket Connection with Exponential Backoff Reconnect
+    // ════════════════════════════════════════════════════════════════
+
+    const WS_URL = 'ws://localhost:8766';
+    let ws = null;
+    let reconnectDelay = 500;   // ms, starts at 500
+    const MAX_RECONNECT = 8000; // cap at 8 seconds
+    let reconnectTimer = null;
+
+    function connect() {
+        if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+
+        try { ws = new WebSocket(WS_URL); } catch(e) { scheduleReconnect(); return; }
+
+        ws.onopen = function() {
+            reconnectDelay = 500; // reset backoff
+            els.overlay.classList.add('hidden');
+            els.badge.classList.remove('disconnected');
+            els.badgeText.textContent = 'LIVE';
+        };
+
+        ws.onmessage = function(evt) {
+            try {
+                state = JSON.parse(evt.data);
+                updateDashboard(state);
+            } catch(e) { /* ignore parse errors */ }
+        };
+
+        ws.onclose = function() {
+            setDisconnected();
+            scheduleReconnect();
+        };
+
+        ws.onerror = function() {
+            ws.close();
+        };
+    }
+
+    function setDisconnected() {
+        els.overlay.classList.remove('hidden');
+        els.badge.classList.add('disconnected');
+        els.badgeText.textContent = 'DISCONNECTED';
+    }
+
+    function scheduleReconnect() {
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+        els.reconnInfo.textContent = `Reconnecting in ${(reconnectDelay/1000).toFixed(1)}s …`;
+        reconnectTimer = setTimeout(() => {
+            els.reconnInfo.textContent = `Connecting to ${WS_URL} …`;
+            connect();
+        }, reconnectDelay);
+        reconnectDelay = Math.min(reconnectDelay * 1.5, MAX_RECONNECT);
+    }
+
+    connect(); // initial connection attempt
+
+    // ════════════════════════════════════════════════════════════════
+    //  Dashboard Update Engine
+    // ════════════════════════════════════════════════════════════════
+
+    function updateDashboard(s) {
+        // ── Stats Pills ─────────────────────────────────────────────
+        els.episode.textContent = s.episode || 0;
+        els.steps.textContent   = s.steps_since_food || 0;
+        els.speed.textContent   = (s.speed || 0).toFixed(2);
+        els.sigma.textContent   = (s.sigma || 0).toFixed(3);
+        els.fe.textContent      = (s.dreamer_loss || 0).toFixed(3);
+        els.hdc.textContent     = (s.hdc_familiarity || 0).toFixed(3);
+
+        // ── Drive Bars ──────────────────────────────────────────────
+        setDrive(els.hunger, els.hungerV, s.hunger);
+        setDrive(els.da,     els.daV,     s.da);
+        setDrive(els.cort,   els.cortV,   s.uncertainty);
+        setDrive(els.ne,     els.neV,     s.ne);
+        setDrive(els.fatigue,els.fatigueV,s.fatigue);
+        setDrive(els.spd,    els.spdV,    s.speed_drive);
+
+        // ── Ego-Vector ──────────────────────────────────────────────
+        const ego = s.ego_state || [1,1,0,0];
+        setEgo(els.egoL, els.egoLBar, ego[0], 'health');
+        setEgo(els.egoR, els.egoRBar, ego[1], 'health');
+        setEgo(els.egoS, els.egoSBar, ego[2], 'slip');
+        setEgo(els.egoT, els.egoTBar, ego[3], 'strain');
+
+        // ── Metrics ─────────────────────────────────────────────────
+        els.surprise.textContent  = (s.dreamer_loss || 0).toFixed(4);
+        els.certainty.textContent = (s.dreamer_surprise || 0).toFixed(4);
+        els.reflex.textContent    = s.reflex_fired ? 'FIRED' : 'OFF';
+        els.reflex.style.color    = s.reflex_fired ? 'var(--accent-red)' : 'var(--accent-emerald)';
+        els.sleep.textContent     = s.is_sleeping ? 'SLEEPING' : 'AWAKE';
+        els.sleep.style.color     = s.is_sleeping ? 'var(--accent-violet)' : 'var(--accent-emerald)';
+
+        // ── Trail ───────────────────────────────────────────────────
+        if (s.pos) {
+            trail.push([s.pos[0], s.pos[1]]);
+            if (trail.length > MAX_TRAIL) trail.shift();
+        }
+
+        // ── Render Canvases ─────────────────────────────────────────
+        drawArena(s);
+        drawReservoir(s.neuron_states || []);
+        drawSparkline(s.steps_to_food_history || []);
+        drawNavVector(s.nav_signal || [0, 0]);
+    }
+
+    function setDrive(barEl, valEl, v) {
+        const val = Math.max(0, Math.min(1, v || 0));
+        barEl.style.width = (val * 100) + '%';
+        valEl.textContent = val.toFixed(2);
+    }
+
+    function setEgo(valEl, barEl, v, type) {
+        const val = Math.max(0, Math.min(1, v || 0));
+        valEl.textContent = val.toFixed(2);
+        barEl.style.width = (val * 100) + '%';
+
+        // Color-code by health status
+        let color;
+        if (type === 'health') {
+            color = val > 0.7 ? 'var(--accent-emerald)' :
+                    val > 0.4 ? 'var(--accent-amber)' : 'var(--accent-red)';
+        } else if (type === 'slip') {
+            color = val < 0.3 ? 'var(--accent-cyan)' :
+                    val < 0.6 ? 'var(--accent-amber)' : 'var(--accent-red)';
+        } else {
+            color = val < 0.5 ? 'var(--accent-amber)' : 'var(--accent-red)';
+        }
+        valEl.style.color = color;
+        barEl.style.background = color;
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Arena Map Renderer
+    // ════════════════════════════════════════════════════════════════
+
+    function worldToCanvas(wx, wy, cw, ch) {
+        const px = ((wx + ARENA_WORLD/2) / ARENA_WORLD) * cw;
+        const py = ((ARENA_WORLD/2 - wy) / ARENA_WORLD) * ch; // flip Y
+        return [px, py];
+    }
+
+    function drawArena(s) {
+        const c = els.arena;
+        const ctx = arenaCtx;
+        const w = c.width, h = c.height;
+        ctx.clearRect(0, 0, w, h);
+
+        // Background
+        ctx.fillStyle = '#080c16';
+        ctx.fillRect(0, 0, w, h);
+
+        // Grid lines
+        ctx.strokeStyle = 'rgba(99, 102, 241, 0.08)';
+        ctx.lineWidth = 1;
+        for (let i = -4; i <= 4; i++) {
+            const [gx, gy] = worldToCanvas(i, -5, w, h);
+            const [gx2, gy2] = worldToCanvas(i, 5, w, h);
+            ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx2, h); ctx.stroke();
+            const [hx, hy] = worldToCanvas(-5, i, w, h);
+            const [hx2, hy2] = worldToCanvas(5, i, w, h);
+            ctx.beginPath(); ctx.moveTo(0, hy); ctx.lineTo(w, hy2); ctx.stroke();
+        }
+
+        // Arena boundary
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.25)';
+        ctx.lineWidth = 2;
+        const [bx1, by1] = worldToCanvas(-4.65, 4.65, w, h);
+        const [bx2, by2] = worldToCanvas(4.65, -4.65, w, h);
+        ctx.strokeRect(bx1, by1, bx2 - bx1, by2 - by1);
+
+        // Center obstacle indicator
+        const [cx, cy] = worldToCanvas(0, 0, w, h);
+        ctx.beginPath();
+        ctx.arc(cx, cy, (0.72 / ARENA_WORLD) * w, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.1)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Trail (fading gradient)
+        if (trail.length > 1) {
+            for (let i = 1; i < trail.length; i++) {
+                const alpha = (i / trail.length) * 0.6;
+                const [x1, y1] = worldToCanvas(trail[i-1][0], trail[i-1][1], w, h);
+                const [x2, y2] = worldToCanvas(trail[i][0], trail[i][1], w, h);
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = `rgba(129, 140, 248, ${alpha})`;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+        }
+
+        // Food pellet
+        if (s.food) {
+            const [fx, fy] = worldToCanvas(s.food[0], s.food[1], w, h);
+            // Glow
+            const fGrad = ctx.createRadialGradient(fx, fy, 0, fx, fy, 16);
+            fGrad.addColorStop(0, 'rgba(251, 191, 36, 0.4)');
+            fGrad.addColorStop(1, 'rgba(251, 191, 36, 0)');
+            ctx.fillStyle = fGrad;
+            ctx.beginPath(); ctx.arc(fx, fy, 16, 0, Math.PI*2); ctx.fill();
+            // Dot
+            ctx.beginPath();
+            ctx.arc(fx, fy, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#fbbf24';
+            ctx.fill();
+        }
+
+        // Bob (the agent)
+        if (s.pos) {
+            const [bx, by] = worldToCanvas(s.pos[0], s.pos[1], w, h);
+            // Glow
+            const bGrad = ctx.createRadialGradient(bx, by, 0, bx, by, 22);
+            bGrad.addColorStop(0, 'rgba(99, 102, 241, 0.5)');
+            bGrad.addColorStop(1, 'rgba(99, 102, 241, 0)');
+            ctx.fillStyle = bGrad;
+            ctx.beginPath(); ctx.arc(bx, by, 22, 0, Math.PI*2); ctx.fill();
+            // Body
+            ctx.beginPath();
+            ctx.arc(bx, by, 7, 0, Math.PI * 2);
+            ctx.fillStyle = s.is_sleeping ? '#a78bfa' : '#818cf8';
+            ctx.fill();
+            ctx.strokeStyle = '#c7d2fe';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Navigation vector
+            if (s.nav_signal && s.nav_signal.length >= 2) {
+                const navLen = 25;
+                const nx = bx + s.nav_signal[0] * navLen;
+                const ny = by - s.nav_signal[1] * navLen; // flip Y
+                ctx.beginPath();
+                ctx.moveTo(bx, by);
+                ctx.lineTo(nx, ny);
+                ctx.strokeStyle = 'rgba(34, 211, 238, 0.7)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                // Arrowhead
+                ctx.beginPath();
+                ctx.arc(nx, ny, 3, 0, Math.PI*2);
+                ctx.fillStyle = '#22d3ee';
+                ctx.fill();
+            }
+        }
+
+        // Coordinates label
+        if (s.pos) {
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+            ctx.font = '11px "JetBrains Mono", monospace';
+            ctx.fillText(`(${s.pos[0].toFixed(1)}, ${s.pos[1].toFixed(1)})`, 8, h - 8);
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  32-Neuron Reservoir Heatmap
+    // ════════════════════════════════════════════════════════════════
+
+    const neuronHistory = []; // rolling window of neuron snapshots
+    const NEURON_HISTORY_LEN = 40;
+
+    function drawReservoir(neurons) {
+        if (!neurons || neurons.length === 0) return;
+
+        // Record snapshot
+        neuronHistory.push(neurons.slice(0, 32));
+        if (neuronHistory.length > NEURON_HISTORY_LEN) neuronHistory.shift();
+
+        const c = els.reservoir;
+        const ctx = resCtx;
+        const w = c.width, h = c.height;
+        ctx.clearRect(0, 0, w, h);
+
+        const rows = 32;
+        const cols = neuronHistory.length;
+        const cellW = w / cols;
+        const cellH = h / rows;
+
+        for (let col = 0; col < cols; col++) {
+            const snap = neuronHistory[col];
+            for (let row = 0; row < rows; row++) {
+                const v = snap[row] || 0;
+                // Map tanh output [-1, 1] to color
+                const t = (v + 1) / 2; // normalize to [0, 1]
+                const r = Math.round(t * 99 + (1-t) * 8);
+                const g = Math.round(t * 102 + (1-t) * 12);
+                const b = Math.round(t * 241 + (1-t) * 26);
+                const a = 0.3 + t * 0.7;
+                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`;
+                ctx.fillRect(col * cellW, row * cellH, cellW + 0.5, cellH + 0.5);
+            }
+        }
+
+        // Neuron index labels
+        ctx.fillStyle = 'rgba(100, 116, 139, 0.4)';
+        ctx.font = '8px "JetBrains Mono", monospace';
+        for (let i = 0; i < 32; i += 8) {
+            ctx.fillText(i, 2, i * cellH + cellH - 1);
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Steps-to-Food Sparkline
+    // ════════════════════════════════════════════════════════════════
+
+    function drawSparkline(history) {
+        const c = els.sparkline;
+        const ctx = sparkCtx;
+        const w = c.width, h = c.height;
+        ctx.clearRect(0, 0, w, h);
+
+        if (!history || history.length < 2) return;
+
+        const maxVal = Math.max(...history, 100);
+        const n = history.length;
+        const stepX = w / (n - 1);
+
+        // Fill area
+        ctx.beginPath();
+        ctx.moveTo(0, h);
+        for (let i = 0; i < n; i++) {
+            const x = i * stepX;
+            const y = h - (history[i] / maxVal) * (h - 4);
+            ctx.lineTo(x, y);
+        }
+        ctx.lineTo(w, h);
+        ctx.closePath();
+
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, 'rgba(99, 102, 241, 0.25)');
+        grad.addColorStop(1, 'rgba(99, 102, 241, 0.02)');
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Line
+        ctx.beginPath();
+        for (let i = 0; i < n; i++) {
+            const x = i * stepX;
+            const y = h - (history[i] / maxVal) * (h - 4);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = '#818cf8';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Latest value label
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        ctx.font = '10px "JetBrains Mono", monospace';
+        ctx.fillText(history[n-1], w - 40, 12);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  Navigation Vector Compass
+    // ════════════════════════════════════════════════════════════════
+
+    function drawNavVector(nav) {
+        const c = els.nav;
+        const ctx = navCtx;
+        const w = c.width, h = c.height;
+        ctx.clearRect(0, 0, w, h);
+
+        const cx = w / 2, cy = h / 2;
+        const radius = Math.min(w, h) / 2 - 16;
+
+        // Circle
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(99, 102, 241, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Crosshair
+        ctx.strokeStyle = 'rgba(99, 102, 241, 0.1)';
+        ctx.beginPath(); ctx.moveTo(cx - radius, cy); ctx.lineTo(cx + radius, cy); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx, cy - radius); ctx.lineTo(cx, cy + radius); ctx.stroke();
+
+        // Nav arrow
+        if (nav.length >= 2) {
+            const ax = cx + nav[0] * radius * 0.85;
+            const ay = cy - nav[1] * radius * 0.85;
+
+            // Line
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(ax, ay);
+            ctx.strokeStyle = '#22d3ee';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Tip
+            ctx.beginPath();
+            ctx.arc(ax, ay, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#22d3ee';
+            ctx.fill();
+
+            // Center dot
+            ctx.beginPath();
+            ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+            ctx.fillStyle = '#64748b';
+            ctx.fill();
+        }
+
+        // Labels
+        ctx.fillStyle = 'rgba(100, 116, 139, 0.5)';
+        ctx.font = '9px "JetBrains Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('FWD', cx, cy - radius - 4);
+        ctx.fillText('cos=' + (nav[0]||0).toFixed(2) + '  sin=' + (nav[1]||0).toFixed(2), cx, h - 4);
+        ctx.textAlign = 'start';
+    }
+
+})();
+</script>
+</body>
+</html>

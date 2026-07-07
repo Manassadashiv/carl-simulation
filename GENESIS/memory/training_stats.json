@@ -1,0 +1,12 @@
+{
+  "episodes": [
+    {
+      "ep": 1,
+      "steps": 0,
+      "hunger": 0.30000000000000004
+    }
+  ],
+  "total_food": 1,
+  "total_wall_hits": 0,
+  "start_time": "2026-06-04 08:52:59"
+}

@@ -1,0 +1,320 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mujoco model="CARL Kinetic">
+  <option timestep="0.01" gravity="0 0 -9.81" solver="Newton" integrator="implicit" />
+  <compiler angle="radian" coordinate="local" inertiafromgeom="true" />
+
+  <default>
+    <geom contype="1" conaffinity="1" condim="3" friction="1.2 0.005 0.0001" />
+    <joint damping="0.15" frictionloss="0.003" />
+    <position ctrllimited="true" forcelimited="true" forcerange="-5.0 5.0" />
+    <velocity forcelimited="true" forcerange="-2.5 2.5" />
+  </default>
+
+  <asset>
+    <material name="matte_shell" rgba="0.90 0.92 0.94 1.0" roughness="0.4" />
+    <material name="inner_frame" rgba="0.22 0.24 0.28 1.0" roughness="0.5" />
+    <material name="laser_ring" rgba="0.00 0.80 1.00 1.0" emission="1.2" />
+    <material name="wall_mat" rgba="0.12 0.15 0.18 1.0" roughness="0.9" />
+    <material name="wall_glow" rgba="0.05 0.70 0.90 1.0" emission="0.8" />
+    <material name="food_mat" rgba="0.20 0.90 0.30 1.0" emission="0.5" />
+    <material name="danger_mat" rgba="0.90 0.15 0.15 1.0" emission="0.8" />
+    
+    <material name="obj_blue" rgba="0.20 0.45 0.90 1.0" roughness="0.3" />
+    <material name="obj_orange" rgba="0.95 0.55 0.10 1.0" roughness="0.3" />
+    <material name="obj_pink" rgba="0.90 0.40 0.60 1.0" roughness="0.4" />
+    <material name="finger_mat" rgba="0.95 0.75 0.15 1.0" roughness="0.6" />
+    
+    <material name="predator_mat" rgba="0.80 0.05 0.05 1.0" emission="1.0" roughness="0.3" />
+    <material name="predator_glow_mat" rgba="1.00 0.20 0.10 1.0" emission="1.5" />
+    <material name="ghost_wall_mat" rgba="0.10 0.12 0.20 0.9" roughness="0.8" />
+    <material name="ghost_glow_mat" rgba="0.10 0.50 0.80 1.0" emission="0.6" />
+    <material name="debris_mat" rgba="0.35 0.30 0.25 1.0" roughness="1.0" />
+  </asset>
+
+  <worldbody>
+    <light name="studio_sun" pos="2 1 5" dir="-0.3 -0.2 -1" diffuse="0.85 0.85 0.85" castshadow="true" />
+    <geom name="floor" type="plane" size="12 12 0.1" rgba="0.93 0.94 0.96 1" friction="0.001 0.001 0.0001" />
+
+    
+    <geom name="wall_s" type="box" size="5.0 0.05 0.50" pos="0  -5.0  0.50" material="wall_mat" />
+    <geom name="wall_n" type="box" size="5.0 0.05 0.50" pos="0   5.0  0.50" material="wall_mat" />
+    <geom name="wall_w" type="box" size="0.05 5.0 0.50" pos="-5.0  0  0.50" material="wall_mat" />
+    <geom name="wall_e" type="box" size="0.05 5.0 0.50" pos=" 5.0  0  0.50" material="wall_mat" />
+
+    
+    <geom name="wg_s" type="box" size="5.0 0.01 0.004" pos="0  -5.0  1.004" material="wall_glow" contype="0" conaffinity="0" />
+    <geom name="wg_n" type="box" size="5.0 0.01 0.004" pos="0   5.0  1.004" material="wall_glow" contype="0" conaffinity="0" />
+    <geom name="wg_w" type="box" size="0.01 5.0 0.004" pos="-5.0  0  1.004" material="wall_glow" contype="0" conaffinity="0" />
+    <geom name="wg_e" type="box" size="0.01 5.0 0.004" pos=" 5.0  0  1.004" material="wall_glow" contype="0" conaffinity="0" />
+
+    
+    <geom name="obstacle" type="cylinder" size="0.5 0.45" pos="99 99 0.45" material="wall_mat" />
+    <geom name="obstacle_glow" type="cylinder" size="0.52 0.004" pos="99 99 0.904" material="wall_glow" contype="0" conaffinity="0" />
+
+    
+    <geom name="food" type="sphere" size="0.12" pos="2.0 2.0 0.12" material="food_mat" contype="0" conaffinity="0" />
+
+    
+    
+    <geom name="lwall_v_0_2" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="wall_mat" />
+    <geom name="lwall_v_2_0" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="wall_mat" />
+    <geom name="lwall_v_2_2" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="wall_mat" />
+    <geom name="lwall_v_3_1" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="wall_mat" />
+    <geom name="lwall_h_0_1" type="box" size="0.9 0.05 0.25" pos="99 99 99" material="wall_mat" />
+    <geom name="lwall_h_1_1" type="box" size="0.9 0.05 0.25" pos="99 99 99" material="wall_mat" />
+    <geom name="lwall_h_2_0" type="box" size="0.9 0.05 0.25" pos="99 99 99" material="wall_mat" />
+    <geom name="lwall_h_2_2" type="box" size="0.9 0.05 0.25" pos="99 99 99" material="wall_mat" />
+    <geom name="lwall_h_2_4" type="box" size="0.9 0.05 0.25" pos="99 99 99" material="wall_mat" />
+    <geom name="lwall_h_3_2" type="box" size="0.9 0.05 0.25" pos="99 99 99" material="wall_mat" />
+    <geom name="lwall_h_3_3" type="box" size="0.9 0.05 0.25" pos="99 99 99" material="wall_mat" />
+
+    
+    <body name="hazard_cube" pos="0 1.8 0.15">
+        <joint name="hazard_joint" type="slide" axis="1 0 0" range="-1.5 1.5" damping="1.0" stiffness="0.0" />
+        <geom name="dynamic_hazard" type="box" size="0.15 0.15 0.15" material="danger_mat" />
+    </body>
+
+    
+
+    
+    <body name="obj_cube_0" pos="1.5 1.5 0.008">
+      <freejoint name="fj_cube_0" />
+      <geom name="gcube_0" type="box" size="0.008 0.008 0.008" mass="0.01" material="obj_blue" contype="4" conaffinity="9" friction="2.0 0.01 0.002" />
+    </body>
+
+    
+    <body name="obj_cube_1" pos="-1.5 2.5 0.008">
+      <freejoint name="fj_cube_1" />
+      <geom name="gcube_1" type="box" size="0.008 0.008 0.008" mass="0.01" material="obj_blue" contype="4" conaffinity="9" friction="2.0 0.01 0.002" />
+    </body>
+
+    
+    <body name="obj_cube_2" pos="3.0 -1.0 0.008">
+      <freejoint name="fj_cube_2" />
+      <geom name="gcube_2" type="box" size="0.008 0.008 0.008" mass="0.01" material="obj_blue" contype="4" conaffinity="9" friction="2.0 0.01 0.002" />
+    </body>
+
+    
+    <body name="obj_ball_0" pos="2.5 -1.5 0.008">
+      <freejoint name="fj_ball_0" />
+      <geom name="gball_0" type="sphere" size="0.008" mass="0.006" material="obj_orange" contype="4" conaffinity="9" friction="1.2 0.01 0.002" />
+    </body>
+
+    
+    <body name="obj_ball_1" pos="-2.5 -2.0 0.008">
+      <freejoint name="fj_ball_1" />
+      <geom name="gball_1" type="sphere" size="0.008" mass="0.006" material="obj_orange" contype="4" conaffinity="9" friction="1.2 0.01 0.002" />
+    </body>
+
+    
+    <body name="obj_toy" pos="-2.0 3.0 0.008">
+      <freejoint name="fj_toy" />
+      <geom name="gtoy" type="capsule" size="0.008 0.015" mass="0.012" material="obj_pink" contype="4" conaffinity="9" friction="1.6 0.01 0.002" />
+    </body>
+
+    
+
+    
+    <geom name="predator" type="sphere" size="0.18" pos="99 99 0.15" material="predator_mat" contype="0" conaffinity="0" />
+    <geom name="predator_glow" type="sphere" size="0.22" pos="99 99 0.46" material="predator_glow_mat" contype="0" conaffinity="0" />
+
+    
+    <geom name="ghost_wall_0" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="ghost_wall_mat" />
+    <geom name="ghost_wall_1" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="ghost_wall_mat" />
+    <geom name="ghost_wall_2" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="ghost_wall_mat" />
+    <geom name="ghost_wall_3" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="ghost_wall_mat" />
+    <geom name="ghost_wall_4" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="ghost_wall_mat" />
+    <geom name="ghost_wall_5" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="ghost_wall_mat" />
+    <geom name="ghost_wall_6" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="ghost_wall_mat" />
+    <geom name="ghost_wall_7" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="ghost_wall_mat" />
+    <geom name="ghost_wall_8" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="ghost_wall_mat" />
+    <geom name="ghost_wall_9" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="ghost_wall_mat" />
+    <geom name="ghost_wall_10" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="ghost_wall_mat" />
+    <geom name="ghost_wall_11" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="ghost_wall_mat" />
+    <geom name="ghost_wall_12" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="ghost_wall_mat" />
+    <geom name="ghost_wall_13" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="ghost_wall_mat" />
+    <geom name="ghost_wall_14" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="ghost_wall_mat" />
+    <geom name="ghost_wall_15" type="box" size="0.05 0.9 0.25" pos="99 99 99" material="ghost_wall_mat" />
+    
+    <geom name="ghost_glow_0" type="box" size="0.05 0.9 0.004" pos="99 99 99" material="ghost_glow_mat" contype="0" conaffinity="0" />
+    <geom name="ghost_glow_1" type="box" size="0.05 0.9 0.004" pos="99 99 99" material="ghost_glow_mat" contype="0" conaffinity="0" />
+    <geom name="ghost_glow_2" type="box" size="0.05 0.9 0.004" pos="99 99 99" material="ghost_glow_mat" contype="0" conaffinity="0" />
+    <geom name="ghost_glow_3" type="box" size="0.05 0.9 0.004" pos="99 99 99" material="ghost_glow_mat" contype="0" conaffinity="0" />
+    <geom name="ghost_glow_4" type="box" size="0.05 0.9 0.004" pos="99 99 99" material="ghost_glow_mat" contype="0" conaffinity="0" />
+    <geom name="ghost_glow_5" type="box" size="0.05 0.9 0.004" pos="99 99 99" material="ghost_glow_mat" contype="0" conaffinity="0" />
+    <geom name="ghost_glow_6" type="box" size="0.05 0.9 0.004" pos="99 99 99" material="ghost_glow_mat" contype="0" conaffinity="0" />
+    <geom name="ghost_glow_7" type="box" size="0.05 0.9 0.004" pos="99 99 99" material="ghost_glow_mat" contype="0" conaffinity="0" />
+    <geom name="ghost_glow_8" type="box" size="0.05 0.9 0.004" pos="99 99 99" material="ghost_glow_mat" contype="0" conaffinity="0" />
+    <geom name="ghost_glow_9" type="box" size="0.05 0.9 0.004" pos="99 99 99" material="ghost_glow_mat" contype="0" conaffinity="0" />
+    <geom name="ghost_glow_10" type="box" size="0.05 0.9 0.004" pos="99 99 99" material="ghost_glow_mat" contype="0" conaffinity="0" />
+    <geom name="ghost_glow_11" type="box" size="0.05 0.9 0.004" pos="99 99 99" material="ghost_glow_mat" contype="0" conaffinity="0" />
+    <geom name="ghost_glow_12" type="box" size="0.05 0.9 0.004" pos="99 99 99" material="ghost_glow_mat" contype="0" conaffinity="0" />
+    <geom name="ghost_glow_13" type="box" size="0.05 0.9 0.004" pos="99 99 99" material="ghost_glow_mat" contype="0" conaffinity="0" />
+    <geom name="ghost_glow_14" type="box" size="0.05 0.9 0.004" pos="99 99 99" material="ghost_glow_mat" contype="0" conaffinity="0" />
+    <geom name="ghost_glow_15" type="box" size="0.05 0.9 0.004" pos="99 99 99" material="ghost_glow_mat" contype="0" conaffinity="0" />
+
+    
+    <geom name="debris_0" type="sphere" size="0.05" pos="99 99 99" material="debris_mat" mass="0.3" />
+    <geom name="debris_1" type="sphere" size="0.04" pos="99 99 99" material="debris_mat" mass="0.2" />
+    <geom name="debris_2" type="box" size="0.04 0.03 0.03" pos="99 99 99" material="debris_mat" mass="0.25" />
+    <geom name="debris_3" type="sphere" size="0.06" pos="99 99 99" material="debris_mat" mass="0.35" />
+    <geom name="debris_4" type="box" size="0.05 0.04 0.02" pos="99 99 99" material="debris_mat" mass="0.2" />
+    <geom name="debris_5" type="sphere" size="0.045" pos="99 99 99" material="debris_mat" mass="0.22" />
+    <geom name="debris_6" type="box" size="0.035 0.035 0.04" pos="99 99 99" material="debris_mat" mass="0.18" />
+    <geom name="debris_7" type="sphere" size="0.055" pos="99 99 99" material="debris_mat" mass="0.3" />
+    <geom name="debris_8" type="box" size="0.04 0.05 0.025" pos="99 99 99" material="debris_mat" mass="0.22" />
+    <geom name="debris_9" type="sphere" size="0.04" pos="99 99 99" material="debris_mat" mass="0.15" />
+    <geom name="debris_10" type="box" size="0.03 0.04 0.035" pos="99 99 99" material="debris_mat" mass="0.2" />
+    <geom name="debris_11" type="sphere" size="0.05" pos="99 99 99" material="debris_mat" mass="0.28" />
+
+    
+    <body name="drive_deck" pos="0 0 0.04">
+      <freejoint name="spatial_identity" />
+      
+      <geom name="chassis" type="box" size="0.11 0.09 0.012" material="inner_frame" mass="2.5" contype="2" conaffinity="1" />
+
+      
+      <body name="lidar_scanner" pos="0.07 0 0.09">
+        <geom type="cylinder" size="0.024 0.01" material="inner_frame" contype="0" conaffinity="0" />
+        <geom type="cylinder" size="0.022 0.006" pos="0 0 0.006" material="laser_ring" contype="0" conaffinity="0" />
+      </body>
+
+      
+      <body name="wheel_L" pos="0.0  0.11 0">
+        <joint name="w_left" type="hinge" axis="0 1 0" damping="0.005" frictionloss="0.001" />
+        <geom type="cylinder" size="0.04 0.016" euler="1.5708 0 0" material="inner_frame" friction="1.4" mass="0.05" contype="2" conaffinity="1" />
+      </body>
+      <body name="wheel_R" pos="0.0 -0.11 0">
+        <joint name="w_right" type="hinge" axis="0 1 0" damping="0.005" frictionloss="0.001" />
+        <geom type="cylinder" size="0.04 0.016" euler="1.5708 0 0" material="inner_frame" friction="1.4" mass="0.05" contype="2" conaffinity="1" />
+      </body>
+      <body name="w_caster" pos="-0.09 0 -0.022">
+        <geom type="sphere" size="0.015" material="matte_shell" friction="0.002" mass="0.03" contype="2" conaffinity="1" />
+      </body>
+      <body name="w_caster_front" pos="0.09 0 -0.022">
+        <geom type="sphere" size="0.015" material="matte_shell" friction="0.002" mass="0.03" contype="2" conaffinity="1" />
+      </body>
+
+      
+      <body name="swaying_hip" pos="-0.01 0 0.015">
+        <joint name="hip_pitch" type="hinge" axis="0 1 0" range="-0.55 0.55" stiffness="2.0" damping="0.2" />
+        <joint name="hip_roll" type="hinge" axis="1 0 0" range="-0.38 0.38" stiffness="2.0" damping="0.2" />
+        
+        <body name="torso" pos="0 0 0.06">
+          
+          <geom name="torso_geom" type="box" size="0.05 0.06 0.07" material="matte_shell" mass="0.25" contype="2" conaffinity="1" />
+
+          
+          <body name="shoulder_link_L" pos="0 0.075 0.03">
+            <joint name="shoulder_yaw_L" type="hinge" axis="0 0 1" range="-0.1 1.57" damping="2.0" />
+            <geom name="gsl_L" type="sphere" size="0.015" material="inner_frame" mass="0.01" contype="2" conaffinity="1" />
+            <body name="upper_arm_L" pos="0 0 0">
+              <joint name="shoulder_L" type="hinge" axis="0 1 0" range="-2.0 2.0" damping="2.0" />
+              <geom name="gua_L" type="capsule" fromto="0 0 0  0.12 0 0" size="0.012" material="inner_frame" mass="0.07" contype="2" conaffinity="1" />
+
+              <body name="forearm_L" pos="0.12 0 0">
+                <joint name="elbow_L" type="hinge" axis="0 1 0" range="-2.44 0" damping="1.5" />
+                <geom name="gfa_L" type="capsule" fromto="0 0 0  0.11 0 0" size="0.010" material="matte_shell" mass="0.05" contype="2" conaffinity="1" />
+
+                <body name="gripper_base_L" pos="0.11 0 0">
+                  <joint name="wrist_L" type="hinge" axis="1 0 0" range="-1.57 1.57" damping="1.0" />
+                  <geom name="gwb_L" type="box" size="0.012 0.014 0.012" material="inner_frame" mass="0.015" contype="2" conaffinity="1" />
+
+                  
+                  <body name="finger_L_top" pos="0.012 0.016 0">
+                    <joint name="grip_L" type="hinge" axis="0 0 1" range="0 0.52" damping="0.8" />
+                    <geom name="finger_L_tip" type="box" size="0.018 0.005 0.010" pos="0.018 0 0" material="finger_mat" mass="0.01" contype="8" conaffinity="13" friction="2.0 0.01 0.001" />
+                    <site name="touch_site_L" pos="0.036 0 0" size="0.008" rgba="1 0 0 0.3" />
+                  </body>
+                  
+                  <body name="finger_L_bot" pos="0.012 -0.016 0">
+                    <geom name="finger_L_base" type="box" size="0.018 0.005 0.010" pos="0.018 0 0" material="finger_mat" mass="0.01" contype="8" conaffinity="13" friction="2.0 0.01 0.001" />
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+
+          
+          <body name="shoulder_link_R" pos="0 -0.075 0.03">
+            <joint name="shoulder_yaw_R" type="hinge" axis="0 0 1" range="-1.57 0.1" damping="2.0" />
+            <geom name="gsl_R" type="sphere" size="0.015" material="inner_frame" mass="0.01" contype="2" conaffinity="1" />
+            <body name="upper_arm_R" pos="0 0 0">
+              <joint name="shoulder_R" type="hinge" axis="0 1 0" range="-2.0 2.0" damping="2.0" />
+              <geom name="gua_R" type="capsule" fromto="0 0 0  0.12 0 0" size="0.012" material="inner_frame" mass="0.07" contype="2" conaffinity="1" />
+
+              <body name="forearm_R" pos="0.12 0 0">
+                <joint name="elbow_R" type="hinge" axis="0 1 0" range="-2.44 0" damping="1.5" />
+                <geom name="gfa_R" type="capsule" fromto="0 0 0  0.11 0 0" size="0.010" material="matte_shell" mass="0.05" contype="2" conaffinity="1" />
+
+                <body name="gripper_base_R" pos="0.11 0 0">
+                  <joint name="wrist_R" type="hinge" axis="1 0 0" range="-1.57 1.57" damping="1.0" />
+                  <geom name="gwb_R" type="box" size="0.012 0.014 0.012" material="inner_frame" mass="0.015" contype="2" conaffinity="1" />
+
+                  
+                  <body name="finger_R_top" pos="0.012 0.016 0">
+                    <joint name="grip_R" type="hinge" axis="0 0 1" range="0 0.52" damping="0.8" />
+                    <geom name="finger_R_tip" type="box" size="0.018 0.005 0.010" pos="0.018 0 0" material="finger_mat" mass="0.01" contype="8" conaffinity="13" friction="2.0 0.01 0.001" />
+                    <site name="touch_site_R" pos="0.036 0 0" size="0.008" rgba="1 0 0 0.3" />
+                  </body>
+                  
+                  <body name="finger_R_bot" pos="0.012 -0.016 0">
+                    <geom name="finger_R_base" type="box" size="0.018 0.005 0.010" pos="0.018 0 0" material="finger_mat" mass="0.01" contype="8" conaffinity="13" friction="2.0 0.01 0.001" />
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+
+          
+          <body name="neck_parallel_link" pos="0.01 0 0.07">
+            <joint name="neck_sweep" type="hinge" axis="0 1 0" range="-0.6 0.7" stiffness="0.5" damping="0.1" />
+            <geom type="box" size="0.01 0.015 0.05" pos="0 0 0.04" material="inner_frame" mass="0.02" contype="2" conaffinity="1" />
+
+            <body name="head" pos="0 0 0.08">
+              <joint name="head_pan" type="hinge" axis="0 0 1" range="-1.4 1.4" damping="0.1" />
+              <geom type="box" size="0.045 0.045 0.035" material="matte_shell" mass="0.10" contype="2" conaffinity="1" />
+              <geom type="box" size="0.01 0.035 0.015" pos="0.036 0 0" material="inner_frame" contype="2" conaffinity="1" />
+            </body>
+          </body>
+
+        </body>
+      </body>
+
+    </body>
+  </worldbody>
+
+  
+  <actuator>
+    
+    <velocity name="act_w_left" joint="w_left" kv="0.5" forcelimited="true" forcerange="-0.35 0.35" ctrllimited="true" ctrlrange="-35 35" />
+    <velocity name="act_w_right" joint="w_right" kv="0.5" forcelimited="true" forcerange="-0.35 0.35" ctrllimited="true" ctrlrange="-35 35" />
+
+    
+    <position name="act_hip_pitch" joint="hip_pitch" kp="2.0" ctrlrange="-0.55 0.55" />
+    <position name="act_hip_roll" joint="hip_roll" kp="2.0" ctrlrange="-0.38 0.38" />
+    <position name="act_neck" joint="neck_sweep" kp="0.1" ctrlrange="-0.6 0.7" />
+    <position name="act_head" joint="head_pan" kp="0.5" ctrlrange="-1.4 1.4" />
+
+    
+    <position name="act_shoulder_yaw_L" joint="shoulder_yaw_L" kp="120.0" ctrlrange="-0.1 1.57" />
+    <position name="act_shoulder_L" joint="shoulder_L" kp="120.0" ctrlrange="-2.0 2.0" />
+    <position name="act_elbow_L" joint="elbow_L" kp="100.0" ctrlrange="-2.44 0" />
+    <position name="act_wrist_L" joint="wrist_L" kp="60.0" ctrlrange="-1.57 1.57" />
+    <position name="act_grip_L" joint="grip_L" kp="50.0" ctrlrange="0 0.52" />
+
+    
+    <position name="act_shoulder_yaw_R" joint="shoulder_yaw_R" kp="120.0" ctrlrange="-1.57 0.1" />
+    <position name="act_shoulder_R" joint="shoulder_R" kp="120.0" ctrlrange="-2.0 2.0" />
+    <position name="act_elbow_R" joint="elbow_R" kp="100.0" ctrlrange="-2.44 0" />
+    <position name="act_wrist_R" joint="wrist_R" kp="60.0" ctrlrange="-1.57 1.57" />
+    <position name="act_grip_R" joint="grip_R" kp="50.0" ctrlrange="0 0.52" />
+  </actuator>
+
+  
+  <sensor>
+    <touch name="touch_L" site="touch_site_L" />
+    <touch name="touch_R" site="touch_site_R" />
+  </sensor>
+
+</mujoco>

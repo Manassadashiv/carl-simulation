@@ -1,0 +1,47 @@
+<mujoco>
+  <option timestep="0.01" gravity="0 0 -9.81"/>
+  
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.1 0.1 0.12" rgb2="0.0 0.0 0.0" width="512" height="512"/>
+    <texture name="grid" type="2d" builtin="checker" rgb1="0.2 0.2 0.2" rgb2="0.3 0.3 0.3" width="512" height="512"/>
+    <material name="floor_mat" texture="grid" texrepeat="10 10"/>
+    <material name="blob_mat" rgba="0.2 0.8 1.0 1.0" emission="0.5"/>
+    <material name="food_mat" rgba="0.2 1.0 0.2 1.0" emission="0.8"/>
+    <material name="wall_mat" rgba="0.5 0.5 0.5 1.0"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 5" dir="0 0 -1" diffuse="0.8 0.8 0.8"/>
+    
+    <geom name="floor" type="plane" size="5 5 0.1" pos="0 0 0" material="floor_mat"/>
+
+    <!-- Boundary Walls (Thicker to prevent high-speed physics tunneling) -->
+    <geom name="wall_n" type="box" size="5 0.5 0.5" pos="0 5.4 0.5" material="wall_mat"/>
+    <geom name="wall_s" type="box" size="5 0.5 0.5" pos="0 -5.4 0.5" material="wall_mat"/>
+    <geom name="wall_e" type="box" size="0.5 5 0.5" pos="5.4 0 0.5" material="wall_mat"/>
+    <geom name="wall_w" type="box" size="0.5 5 0.5" pos="-5.4 0 0.5" material="wall_mat"/>
+
+    <!-- Internal Obstacle -->
+    <geom name="obstacle" type="cylinder" size="0.5 0.5" pos="0 0 0.5" material="wall_mat"/>
+
+    <!-- Food (No Collision) -->
+    <geom name="food" type="sphere" size="0.15" pos="2.5 2.5 0.15" material="food_mat" contype="0" conaffinity="0"/>
+
+    <!-- The Blob (Planar sliding + Z rotation) -->
+    <body name="blob" pos="-2.5 -2.5 0.15">
+      <joint name="slide_x" type="slide" axis="1 0 0" damping="2.0" armature="0.1"/>
+      <joint name="slide_y" type="slide" axis="0 1 0" damping="2.0" armature="0.1"/>
+      <joint name="hinge_z" type="hinge" axis="0 0 1" damping="0.5" armature="0.05"/>
+      <geom name="blob_geom" type="cylinder" size="0.2 0.1" material="blob_mat" mass="1.0" friction="0.5 0.1 0.1"/>
+      
+      <!-- Blob's Eye (Lidar Origin) pointing forward (along local positive X axis) -->
+      <site name="eye" pos="0.15 0 0.1" size="0.05" rgba="1 0 0 1"/>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <motor name="motor_x" joint="slide_x" gear="5"/>
+    <motor name="motor_y" joint="slide_y" gear="5"/>
+    <motor name="motor_z" joint="hinge_z" gear="2"/>
+  </actuator>
+</mujoco>

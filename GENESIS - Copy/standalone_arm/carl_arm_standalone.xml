@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mujoco model="CARL Arm Standalone">
+  <option timestep="0.005" gravity="0 0 -9.81" solver="Newton" integrator="implicit" />
+  <compiler angle="radian" coordinate="local" inertiafromgeom="true" />
+
+  <default>
+    <geom contype="1" conaffinity="1" condim="3" friction="1.2 0.005 0.0001" />
+    <joint damping="0.15" frictionloss="0.003" />
+    <position ctrllimited="true" forcelimited="true" forcerange="-8.0 8.0" />
+    <velocity forcelimited="true" forcerange="-3.0 3.0" />
+  </default>
+
+  <asset>
+    <material name="shell_white" rgba="0.92 0.93 0.96 1.0" roughness="0.25" specular="0.5" />
+    <material name="frame_dark" rgba="0.13 0.15 0.18 1.0" roughness="0.45" specular="0.3" />
+    <material name="spine_segment" rgba="0.22 0.24 0.28 1.0" roughness="0.35" />
+    <material name="joint_ring" rgba="0.00 0.78 0.98 1.0" emission="1.0" />
+    <material name="accent_cyan" rgba="0.05 0.70 0.92 1.0" emission="0.6" />
+    
+    <material name="palm_silver" rgba="0.72 0.74 0.78 1.0" roughness="0.25" specular="0.6" />
+    <material name="finger_seg" rgba="0.18 0.20 0.24 1.0" roughness="0.4" />
+    <material name="fingertip_gold" rgba="0.95 0.78 0.18 1.0" roughness="0.3" emission="0.15" />
+
+    <material name="floor_mat" rgba="0.20 0.21 0.24 1.0" roughness="0.7" specular="0.15" />
+    <material name="table_mat" rgba="0.35 0.25 0.18 1.0" roughness="0.8" />
+    <material name="obj_blue" rgba="0.22 0.48 0.92 1.0" roughness="0.25" />
+  </asset>
+
+  <worldbody>
+    <light name="key_sun" pos="2 1.5 5" dir="-0.25 -0.2 -1" diffuse="0.92 0.90 0.88" castshadow="true" />
+    <light name="fill_cool" pos="-2 -1 3.5" dir="0.3 0.15 -1" diffuse="0.35 0.40 0.50" castshadow="false" />
+    <geom name="floor" type="plane" size="6 6 0.1" material="floor_mat" />
+
+    <!-- Clean Lab Bench -->
+    <body name="lab_bench" pos="0.2 0 0.1">
+      <geom name="bench_top" type="box" size="0.4 0.3 0.02" material="table_mat" contype="1" conaffinity="1" />
+      <geom name="bench_leg1" type="cylinder" size="0.02 0.1" pos="0.35 0.25 -0.1" material="frame_dark" />
+      <geom name="bench_leg2" type="cylinder" size="0.02 0.1" pos="-0.35 0.25 -0.1" material="frame_dark" />
+      <geom name="bench_leg3" type="cylinder" size="0.02 0.1" pos="0.35 -0.25 -0.1" material="frame_dark" />
+      <geom name="bench_leg4" type="cylinder" size="0.02 0.1" pos="-0.35 -0.25 -0.1" material="frame_dark" />
+    </body>
+
+    <!-- Arm Mount Base -->
+    <body name="arm_base_plate" pos="0 0 0.12">
+      <geom name="base_plate" type="cylinder" size="0.06 0.01" material="frame_dark" contype="0" conaffinity="0" />
+      <geom name="base_pillar" type="cylinder" size="0.03 0.10" pos="0 0 0.10" material="shell_white" contype="0" conaffinity="0" />
+      
+      <!-- ====================================================== -->
+      <!--                   LEFT ARM (8 DOF)                     -->
+      <!-- ====================================================== -->
+      <!-- Mounted exactly where spine_3 would be to maintain kinematics -->
+      <body name="shoulder_mount_L" pos="0 0 0.202">
+        <joint name="shoulder_yaw_L" type="hinge" axis="0 0 1" range="-0.3 2.2" damping="2.5" />
+        <geom type="sphere" size="0.020" material="frame_dark" mass="0.02" contype="2" conaffinity="5" />
+        <geom type="cylinder" size="0.022 0.003" material="joint_ring" contype="0" conaffinity="0" />
+
+        <body name="upper_arm_L" pos="0 0 0">
+          <joint name="shoulder_pitch_L" type="hinge" axis="0 1 0" range="-2.4 2.4" damping="2.5" />
+          <geom name="upperarm_L" type="capsule" fromto="0 0 0  0.14 0 0" size="0.015"
+                material="frame_dark" mass="0.10" contype="2" conaffinity="5" />
+          <!-- Bicep accent -->
+          <geom type="cylinder" size="0.017 0.003" pos="0.07 0 0" euler="0 1.5708 0"
+                material="accent_cyan" contype="0" conaffinity="0" />
+
+          <body name="forearm_L" pos="0.14 0 0">
+            <joint name="elbow_L" type="hinge" axis="0 1 0" range="-2.8 0" damping="2.0" />
+            <geom type="sphere" size="0.016" material="spine_segment" mass="0.01" contype="2" conaffinity="5" />
+            <geom name="forearm_L_geom" type="capsule" fromto="0 0 0  0.13 0 0" size="0.012"
+                  material="shell_white" mass="0.07" contype="2" conaffinity="5" />
+
+            <!-- === WRIST + HAND === -->
+            <body name="wrist_L" pos="0.13 0 0">
+              <joint name="wrist_roll_L" type="hinge" axis="1 0 0" range="-1.57 1.57" damping="1.0" />
+              <geom type="sphere" size="0.010" material="spine_segment" mass="0.008" contype="0" conaffinity="0" />
+
+              <body name="wrist_flex_L" pos="0 0 0">
+                <joint name="wrist_pitch_L" type="hinge" axis="0 1 0" range="-1.3 1.3" damping="1.0" />
+                <geom type="sphere" size="0.013" material="spine_segment" contype="0" conaffinity="0" />
+
+                <!-- Sleek Cylindrical Palm Base -->
+                <geom name="palm_L" type="cylinder" size="0.018 0.01" pos="0.01 0 0" euler="0 1.5708 0"
+                      material="palm_silver" mass="0.025" contype="2" conaffinity="5" friction="2.0 0.01 0.001" />
+
+                <!-- ─── Thumb (Bottom Center, points forward, curls UP) ─── -->
+                <body name="thumb_L" pos="0.02 0 -0.015">
+                  <joint name="thumb_L_knuckle" type="hinge" axis="0 1 0" range="-0.2 1.4" damping="0.6" />
+                  <geom type="capsule" fromto="0 0 0  0.035 0 0" size="0.006"
+                        material="finger_seg" mass="0.008" contype="2" conaffinity="5" friction="2.0 0.01 0.001" />
+                  <geom name="thumb_L_tip" type="sphere" size="0.007" pos="0.035 0 0"
+                        material="fingertip_gold" mass="0.003" contype="2" conaffinity="5" friction="2.5 0.01 0.001" />
+                  <site name="touch_thumb_L" pos="0.035 0 0" size="0.007" rgba="1 0.3 0 0.25" />
+                </body>
+
+                <!-- ─── Index Finger (Top Left, points forward, curls DOWN) ─── -->
+                <body name="index_L" pos="0.02 0.012 0.015">
+                  <joint name="index_L_knuckle" type="hinge" axis="0 1 0" range="-1.4 0.2" damping="0.6" />
+                  <geom type="capsule" fromto="0 0 0  0.035 0 0" size="0.005"
+                        material="finger_seg" mass="0.006" contype="2" conaffinity="5" friction="2.0 0.01 0.001" />
+                  <geom name="index_L_tip" type="sphere" size="0.006" pos="0.035 0 0"
+                        material="fingertip_gold" mass="0.003" contype="2" conaffinity="5" friction="2.5 0.01 0.001" />
+                  <site name="touch_index_L" pos="0.035 0 0" size="0.006" rgba="1 0.3 0 0.25" />
+                </body>
+
+                <!-- ─── Middle Finger (Top Right, points forward, curls DOWN) ─── -->
+                <body name="middle_L" pos="0.02 -0.012 0.015">
+                  <joint name="middle_L_knuckle" type="hinge" axis="0 1 0" range="-1.4 0.2" damping="0.6" />
+                  <geom type="capsule" fromto="0 0 0  0.035 0 0" size="0.005"
+                        material="finger_seg" mass="0.006" contype="2" conaffinity="5" friction="2.0 0.01 0.001" />
+                  <geom name="middle_L_tip" type="sphere" size="0.006" pos="0.035 0 0"
+                        material="fingertip_gold" mass="0.003" contype="2" conaffinity="5" friction="2.5 0.01 0.001" />
+                  <site name="touch_middle_L" pos="0.035 0 0" size="0.006" rgba="1 0.3 0 0.25" />
+                </body>
+
+                <!-- ─── Grip centre site (midpoint of 3 fingertips, invisible) ─── -->
+                <site name="tip_site" pos="0.055 0 0" size="0.004" rgba="0 0 0 0" />
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+
+    <!-- Target Cube (resting on the lab bench) -->
+    <body name="obj_cube_0" pos="0.21 0 0.14">
+      <freejoint name="fj_cube_0" />
+      <geom name="gcube_0" type="box" size="0.020 0.020 0.020" mass="0.3"
+            material="obj_blue" contype="4" conaffinity="13" friction="1.8 0.01 0.002" />
+    </body>
+
+  </worldbody>
+
+  <actuator>
+    <!-- ── Left Arm (5 DOF positioning + 3 DOF fingers = 8 DOF) ── -->
+    <position name="act_shoulder_yaw_L"   joint="shoulder_yaw_L"   kp="140.0" ctrlrange="-0.3 2.2" />
+    <position name="act_shoulder_pitch_L" joint="shoulder_pitch_L" kp="140.0" ctrlrange="-2.4 2.4" />
+    <position name="act_elbow_L"          joint="elbow_L"          kp="120.0" ctrlrange="-2.8 0" />
+    <position name="act_wrist_roll_L"     joint="wrist_roll_L"     kp="60.0"  ctrlrange="-1.57 1.57" />
+    <position name="act_wrist_pitch_L"    joint="wrist_pitch_L"    kp="60.0"  ctrlrange="-1.3 1.3" />
+    <position name="act_thumb_L"          joint="thumb_L_knuckle"  kp="35.0"  ctrlrange="0 1.4" forcelimited="true" forcerange="-1.5 1.5" />
+    <position name="act_index_L"          joint="index_L_knuckle"  kp="35.0"  ctrlrange="-1.4 0" forcelimited="true" forcerange="-1.5 1.5" />
+    <position name="act_middle_L"         joint="middle_L_knuckle" kp="35.0"  ctrlrange="-1.4 0" forcelimited="true" forcerange="-1.5 1.5" />
+  </actuator>
+
+  <sensor>
+    <touch name="touch_thumb_L_s"  site="touch_thumb_L" />
+    <touch name="touch_index_L_s"  site="touch_index_L" />
+    <touch name="touch_middle_L_s" site="touch_middle_L" />
+  </sensor>
+
+</mujoco>

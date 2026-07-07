@@ -1,0 +1,13 @@
+{
+  "codebase_version": "v3.0",
+  "robot_type": "carl_mk8",
+  "total_episodes": 2,
+  "total_frames": 3996,
+  "total_tasks": 1,
+  "chunks_size": 1000,
+  "fps": 50,
+  "splits": {
+    "train": "0:2"
+  },
+  "data_path": "data/chunk-000/episode_{episode_index:06d}.parquet"
+}

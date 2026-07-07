@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CARL Phase 13 — The Biological Brain</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#030712;
+  --glass:rgba(17,24,39,0.75);
+  --border:rgba(255,255,255,0.08);
+  --cyan:#22d3ee;--cyan2:#06b6d4;
+  --red:#f43f5e;--red-glow:rgba(244,63,94,0.6);
+  --amber:#fbbf24;--amber-glow:rgba(251,191,36,0.6);
+  --green:#34d399;--green-glow:rgba(52,211,153,0.6);
+  --purple:#c084fc;--fuchsia:#e879f9;
+  --dim:#94a3b8;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);color:#f8fafc;
+  min-height:100vh;padding:1.5rem;
+  background-image:
+    radial-gradient(circle at 15% 50%, rgba(34, 211, 238, 0.08), transparent 40%),
+    radial-gradient(circle at 85% 30%, rgba(192, 132, 252, 0.08), transparent 40%);
+  background-attachment: fixed;
+}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
+.title-wrap{display:flex;flex-direction:column;}
+.title{font-size:2.2rem;font-weight:900;background:linear-gradient(90deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px;}
+.sub{font-size:0.65rem;color:var(--dim);letter-spacing:4px;text-transform:uppercase;font-weight:600;}
+.badge{display:flex;align-items:center;gap:0.5rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;padding:0.4rem 0.8rem;background:var(--glass);border:1px solid var(--border);border-radius:20px;}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--red);}
+.dot.on{background:var(--green);box-shadow:0 0 10px var(--green);}
+
+#banner{
+  padding:0.6rem;border-radius:10px;text-align:center;margin-bottom:1rem;
+  font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:800;letter-spacing:6px;
+  border:1px solid var(--cyan);background:rgba(34,211,238,0.1);color:var(--cyan);
+  transition:all 0.3s ease;text-shadow:0 0 8px rgba(34,211,238,0.5);
+}
+.m-curious{border-color:var(--amber)!important;background:rgba(251,191,36,0.1)!important;color:var(--amber)!important;text-shadow:0 0 8px var(--amber-glow)!important;}
+.m-exploit{border-color:var(--green)!important;background:rgba(52,211,153,0.1)!important;color:var(--green)!important;text-shadow:0 0 8px var(--green-glow)!important;}
+.m-fearful{border-color:var(--red)!important;background:rgba(244,63,94,0.15)!important;color:var(--red)!important;text-shadow:0 0 8px var(--red-glow)!important;animation:pulse-red 0.5s infinite alternate;}
+.m-sleep{border-color:var(--fuchsia)!important;background:rgba(232,121,249,0.15)!important;color:var(--fuchsia)!important;text-shadow:0 0 8px rgba(232,121,249,0.6)!important;animation:pulse-purple 1s infinite alternate;}
+.m-dead{border-color:#334155!important;background:rgba(15,23,42,0.6)!important;color:#64748b!important;text-shadow:none!important;}
+
+@keyframes pulse-red{from{box-shadow:0 0 5px rgba(244,63,94,0.2);}to{box-shadow:0 0 20px rgba(244,63,94,0.6);}}
+@keyframes pulse-purple{from{box-shadow:0 0 5px rgba(232,121,249,0.2);}to{box-shadow:0 0 25px rgba(232,121,249,0.5);}}
+@keyframes adrenaline-flash{0%{background:rgba(244,63,94,0.0);}50%{background:rgba(244,63,94,0.2);box-shadow:inset 0 0 20px rgba(244,63,94,0.5);}100%{background:rgba(244,63,94,0.0);}}
+
+.grid{display:grid;grid-template-columns:300px 1fr 320px;gap:1.2rem;}
+.panel{
+  background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--border);border-radius:16px;padding:1.2rem;
+  box-shadow:0 10px 30px -10px rgba(0,0,0,0.5);
+  transition:background 0.3s;
+}
+.panel.adrenaline{animation:adrenaline-flash 0.4s infinite;}
+
+.ptitle{font-size:0.65rem;font-weight:800;letter-spacing:4px;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--border);padding-bottom:0.5rem;margin-bottom:1rem;}
+.ptitle span{float:right;color:var(--cyan);}
+
+.bar-row{margin-bottom:0.8rem;}
+.bar-label{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:0.7rem;margin-bottom:0.3rem;}
+.bar-track{height:10px;background:rgba(255,255,255,0.05);border-radius:5px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,0.5);}
+.bar-fill{height:100%;border-radius:5px;transition:width 0.4s cubic-bezier(0.4, 0, 0.2, 1);}
+
+.b-wm{background:linear-gradient(90deg,#2563eb,var(--cyan));}
+.b-ltm{background:linear-gradient(90deg,var(--purple),var(--fuchsia));}
+.b-curio{background:linear-gradient(90deg,#8b5cf6,var(--amber));}
+.b-danger{background:linear-gradient(90deg,#7f1d1d,var(--red));}
+.b-dopa{background:linear-gradient(90deg,#065f46,var(--green));}
+.b-grief{background:linear-gradient(90deg,#1e1b4b,#4338ca);}
+
+.b-5ht { background: linear-gradient(90deg, #10b981, #34d399); }
+.b-ne { background: linear-gradient(90deg, #ef4444, #f87171); }
+.b-ach { background: linear-gradient(90deg, #8b5cf6, #c084fc); }
+.b-da { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.b-allo { background: linear-gradient(90deg, #475569, #94a3b8); }
+
+.env-strip{display:flex;gap:0.5rem;margin-bottom:1rem;}
+.env-chip{flex:1;padding:0.5rem;border-radius:8px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;border:1px solid;transition:all 0.3s;background:rgba(0,0,0,0.2);}
+.ec-slope{border-color:rgba(34,211,238,0.3);color:var(--cyan2);}
+.ec-wind{border-color:rgba(244,63,94,0.3);color:var(--red);}
+.ec-wind.on{background:rgba(244,63,94,0.2);border-color:var(--red);box-shadow:0 0 15px rgba(244,63,94,0.3);}
+.ec-quake{border-color:rgba(251,191,36,0.3);color:var(--amber);}
+.ec-quake.on{background:rgba(251,191,36,0.2);border-color:var(--amber);box-shadow:0 0 15px rgba(251,191,36,0.3);}
+
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:1rem;}
+.stat{background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:10px;padding:0.8rem;text-align:center;transition:transform 0.2s;}
+.stat:hover{transform:translateY(-2px);border-color:rgba(255,255,255,0.15);}
+.sval{font-family:'JetBrains Mono',monospace;font-size:1.4rem;font-weight:800;color:#fff;}
+.slbl{font-size:0.55rem;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-top:0.3rem;}
+
+.map-inner{display:flex;gap:0.5rem;align-items:stretch;}
+.y-lbl{display:flex;flex-direction:column;justify-content:space-between;font-size:0.55rem;color:var(--dim);font-family:'JetBrains Mono',monospace;text-align:right;}
+#heatmap{width:100%;height:220px;border-radius:8px;image-rendering:pixelated;border:1px solid var(--border);box-shadow:0 4px 15px rgba(0,0,0,0.3);}
+.x-lbl{display:flex;justify-content:space-between;font-size:0.55rem;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:0.4rem;}
+
+.chart-wrap{height:220px;position:relative;margin-bottom:1rem;}
+.legend{display:flex;gap:1.5rem;justify-content:center;font-size:0.65rem;color:var(--dim);margin-bottom:0.8rem;}
+.ld{width:16px;height:4px;border-radius:2px;display:inline-block;margin-right:6px;vertical-align:middle;}
+
+.bodies{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;max-height:450px;overflow-y:auto;padding-right:4px;}
+.bodies::-webkit-scrollbar{width:4px;}
+.bodies::-webkit-scrollbar-thumb{background:rgba(34,211,238,0.3);border-radius:2px;}
+.body-card{background:rgba(0,0,0,0.4);border-radius:8px;padding:0.6rem;border:1px solid rgba(34,211,238,0.2);position:relative;overflow:hidden;}
+.body-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--cyan);}
+.body-card.dead{border-color:rgba(244,63,94,0.2);opacity:0.5;}
+.body-card.dead::before{background:var(--red);}
+.body-title{font-size:0.55rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-bottom:0.3rem;color:var(--cyan);}
+.body-card.dead .body-title{color:var(--red);}
+.sv{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:800;color:#fff;}
+.sv.dead{color:var(--red)!important;}
+.sl{font-size:0.5rem;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:0.4rem;}
+.b-stats{font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:#cbd5e1;}
+
+.pulse-text{animation:pulse-text-anim 1s infinite alternate;}
+@keyframes pulse-text-anim{from{opacity:0.5;}to{opacity:1;}}
+
+.telemetry-row{display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.03);}
+.tel-lbl{font-size:0.65rem;color:var(--dim);letter-spacing:1px;text-transform:uppercase;}
+.tel-val{font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:#fff;font-weight:700;}
+
+</style>
+</head>
+<body>
+<header>
+  <div class="title-wrap"><div class="title">CARL V2.0</div><div class="sub">Phase 13 — The Biological Brain</div></div>
+  <div class="badge"><div class="dot" id="dot"></div><span id="ctext">CONNECTING...</span></div>
+</header>
+<div id="banner">BOOTING...</div>
+<div class="grid">
+  
+  <!-- LEFT: Core State & Environment -->
+  <div class="panel">
+    <div class="ptitle">Environment State</div>
+    <div class="env-strip">
+      <div class="env-chip ec-slope" id="ec-slope">SLOPE<br>0.0°</div>
+      <div class="env-chip ec-wind" id="ec-wind">WIND<br>OFF</div>
+      <div class="env-chip ec-quake" id="ec-quake">QUAKE<br>0.00</div>
+    </div>
+
+    <div class="ptitle" style="margin-top:1.5rem;">Endocrine Engine</div>
+    <div class="bar-row">
+      <div class="bar-label"><span>DA (Dopamine)</span><span id="pc-da" style="color:var(--amber)">0.50</span></div>
+      <div class="bar-track"><div class="bar-fill b-da" id="bar-da" style="width:50%"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span>5HT (Serotonin)</span><span id="pc-5ht" style="color:var(--green)">0.60</span></div>
+      <div class="bar-track"><div class="bar-fill b-5ht" id="bar-5ht" style="width:60%"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span>NE (Norepinephrine)</span><span id="pc-ne" style="color:var(--red)">0.20</span></div>
+      <div class="bar-track"><div class="bar-fill b-ne" id="bar-ne" style="width:20%"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span>ACh (Acetylcholine)</span><span id="pc-ach" style="color:var(--purple)">0.40</span></div>
+      <div class="bar-track"><div class="bar-fill b-ach" id="bar-ach" style="width:40%"></div></div>
+    </div>
+
+    <div class="ptitle" style="margin-top:1.5rem;">Allostatic Core</div>
+    <div class="bar-row">
+      <div class="bar-label"><span>Allostatic Load (Aging)</span><span id="pc-allo" style="color:var(--dim)">0.00</span></div>
+      <div class="bar-track"><div class="bar-fill b-allo" id="bar-allo" style="width:0%"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span>Homeostatic Error</span><span id="pc-homeo" style="color:var(--cyan)">0.00</span></div>
+      <div class="bar-track"><div class="bar-fill b-wm" id="bar-homeo" style="width:0%"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span>Social Comfort</span><span id="pc-social" style="color:var(--fuchsia)">1.00</span></div>
+      <div class="bar-track"><div class="bar-fill b-ltm" id="bar-social" style="width:100%"></div></div>
+    </div>
+
+    <div class="ptitle" style="margin-top:1.5rem;">Biological States</div>
+    <div class="telemetry-row">
+      <span class="tel-lbl">Sleep Phase</span>
+      <span class="tel-val" id="tel-sleep" style="color:var(--fuchsia)">AWAKE</span>
+    </div>
+    <div class="telemetry-row">
+      <span class="tel-lbl">Hebbian Strength</span>
+      <span class="tel-val" id="tel-hebb" style="color:var(--amber)">0.00</span>
+    </div>
+    <div class="telemetry-row">
+      <span class="tel-lbl">Pred. Precision</span>
+      <span class="tel-val" id="tel-pred" style="color:var(--cyan)">0.50</span>
+    </div>
+    <div class="telemetry-row" style="border-bottom:none;">
+      <span class="tel-lbl">REM Dreams</span>
+      <span class="tel-val" id="tel-rem" style="color:var(--dim)">0</span>
+    </div>
+  </div>
+
+  <!-- CENTER: Maps and Charts -->
+  <div class="panel" id="center-panel">
+    <div class="ptitle">Self-Discovered Danger Map <span>Collective LTM</span></div>
+    <div class="map-inner">
+      <div class="y-lbl"><span>+0.65</span><span style="color:var(--red)">FALL</span><span>0</span><span style="color:var(--green)">SAFE</span><span>-0.65</span></div>
+      <canvas id="heatmap" width="20" height="20"></canvas>
+    </div>
+    <div class="x-lbl"><span>-3 vel</span><span>pitch_vel</span><span>+3 vel</span></div>
+
+    <div class="ptitle" style="margin-top:1.5rem;">Dual Surprise Streams <span>Learning Rate</span></div>
+    <div class="legend">
+      <span><div class="ld" style="background:var(--cyan)"></div> WM Surprise (Body 1)</span>
+      <span><div class="ld" style="background:var(--fuchsia)"></div> LTM Surprise (Shared)</span>
+    </div>
+    <div class="chart-wrap"><canvas id="chart"></canvas></div>
+  </div>
+
+  <!-- RIGHT: Swarm and Stats -->
+  <div class="panel">
+    <div class="sgrid">
+      <div class="stat"><div class="sval" id="s-ep">0</div><div class="slbl">Episode</div></div>
+      <div class="stat"><div class="sval" id="s-best" style="color:var(--amber)">0.0s</div><div class="slbl">Best Survival</div></div>
+      <div class="stat"><div class="sval" id="s-dist" style="color:var(--cyan)">2.0m</div><div class="slbl">Best Dist</div></div>
+      <div class="stat"><div class="sval" id="s-reach" style="color:var(--green)">0</div><div class="slbl">Target Reached</div></div>
+    </div>
+    
+    <div class="ptitle" style="margin-top:1rem;">Swarm Intelligence <span>10 Bodies</span></div>
+    <div class="bodies" id="swarm-bodies">
+      <!-- Injected by JS -->
+    </div>
+  </div>
+</div>
+
+<script>
+const ctx=document.getElementById('chart').getContext('2d');
+const N=150;
+const g1=ctx.createLinearGradient(0,0,0,220);g1.addColorStop(0,'rgba(34, 211, 238, 0.4)');g1.addColorStop(1,'rgba(34, 211, 238, 0)');
+const g2=ctx.createLinearGradient(0,0,0,220);g2.addColorStop(0,'rgba(232, 121, 249, 0.4)');g2.addColorStop(1,'rgba(232, 121, 249, 0)');
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.font.family = "'Inter', sans-serif";
+const chart=new Chart(ctx,{type:'line',data:{labels:Array(N).fill(''),datasets:[
+  {label:'WM',data:Array(N).fill(0),borderColor:'#22d3ee',backgroundColor:g1,borderWidth:2,pointRadius:0,fill:true,tension:0.4},
+  {label:'LTM',data:Array(N).fill(0),borderColor:'#e879f9',backgroundColor:g2,borderWidth:2,pointRadius:0,fill:true,tension:0.4}
+]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{font:{family:'JetBrains Mono',size:10}},min:0,suggestedMax:0.4}}}});
+
+const hc=document.getElementById('heatmap'),hctx=hc.getContext('2d');
+function drawHeat(flat){const img=hctx.createImageData(20,20);flat.forEach((v,i)=>{const intensity=Math.min(255,Math.round(v*400));img.data[i*4]=intensity;img.data[i*4+1]=Math.round(v<0.5?0:(v-0.5)*120);img.data[i*4+2]=Math.round(intensity*0.1);img.data[i*4+3]=255;});hctx.putImageData(img,0,0);}
+
+const $ = id => document.getElementById(id);
+
+function setMode(m, sl, stage, adr){
+  const b=$('banner');
+  const pfx = stage ? `STAGE ${stage} | ` : "";
+  if(adr) { b.textContent=pfx+'[ADRENALINE SPIKE]'; b.className='m-fearful'; return; }
+  if(sl)  { b.textContent=pfx+'SLEEPING — DREAMS & TRAUMA REPLAY'; b.className='m-sleep'; return; }
+  b.textContent=pfx+m; b.className='';
+  if(m.includes('CURIOUS')) b.classList.add('m-curious');
+  else if(m.includes('FEARFUL')) b.classList.add('m-fearful');
+  else if(m==='DEAD') b.classList.add('m-dead');
+  else b.classList.add('m-exploit');
+}
+
+function pct(v){return Math.round(v*100)+'%';}
+
+let swarmRendered = false;
+function renderSwarm(d) {
+  if (!d.survivals) return;
+  const c = $('swarm-bodies');
+  if (!swarmRendered || c.children.length !== d.survivals.length) {
+    c.innerHTML = '';
+    d.survivals.forEach((_, i) => {
+      const div = document.createElement('div');
+      div.className = 'body-card';
+      div.id = `bc-${i}`;
+      div.innerHTML = `
+        <div class="body-title">Body ${i+1}</div>
+        <div class="sv" id="sv-${i}">0.00s</div>
+        <div class="sl" id="sl-${i}">alive</div>
+        <div class="b-stats">
+          PITCH: <span id="pitch-${i}" style="color:var(--amber)">0.000</span><br>
+          DIST : <span id="dist-${i}" style="color:var(--cyan)">2.00m</span>
+        </div>
+      `;
+      c.appendChild(div);
+    });
+    swarmRendered = true;
+  }
+  
+  d.survivals.forEach((sv, i) => {
+    const card = $(`bc-${i}`);
+    if(!d.alive_flags[i]) card.classList.add('dead');
+    else card.classList.remove('dead');
+    
+    const svEl = $(`sv-${i}`);
+    svEl.textContent = sv.toFixed(2) + 's';
+    if(!d.alive_flags[i]) svEl.classList.add('dead');
+    else svEl.classList.remove('dead');
+    
+    $(`sl-${i}`).textContent = d.alive_flags[i] ? 'alive' : 'dead';
+    $(`pitch-${i}`).textContent = (d.pitches[i] || 0).toFixed(3);
+    $(`dist-${i}`).textContent = (d.distances[i] || 2.0).toFixed(2) + 'm';
+  });
+}
+
+function connect(){
+  const ws=new WebSocket('ws://localhost:8765');
+  ws.onopen=()=>{$('dot').classList.add('on');$('ctext').textContent='BRAIN SYNCED (30Hz)';$('ctext').style.color='var(--green)';};
+  ws.onclose=()=>{$('dot').classList.remove('on');$('ctext').textContent='RECONNECTING...';$('ctext').style.color='var(--red)';setTimeout(connect,1500);};
+  ws.onmessage=(ev)=>{
+    const d=JSON.parse(ev.data);
+    
+    setMode(d.mode||'IDLE', d.sleep_phase && d.sleep_phase !== 'AWAKE', d.curriculum_stage||1, d.NE > 0.6);
+    
+    if(d.NE > 0.6) $('center-panel').classList.add('adrenaline');
+    else $('center-panel').classList.remove('adrenaline');
+
+    renderSwarm(d);
+
+    const slope=$('ec-slope');slope.innerHTML=`SLOPE<br>${(d.slope_deg||0).toFixed(1)}°`;
+    const wind=$('ec-wind');
+    wind.className='env-chip ec-wind'+(d.wind_active?' on':'');
+    wind.innerHTML=`WIND<br>${d.wind_active?'HIT!':'OFF'}`;
+    const quake=$('ec-quake');
+    quake.className='env-chip ec-quake'+((d.quake_amp||0)>0.05?' on':'');
+    quake.innerHTML=`QUAKE<br>${(d.quake_amp||0).toFixed(2)}`;
+
+    // Endocrine Engine
+    $('bar-da').style.width=pct(d.DA||0);$('pc-da').textContent=(d.DA||0).toFixed(2);
+    $('bar-5ht').style.width=pct(d['5HT']||0);$('pc-5ht').textContent=(d['5HT']||0).toFixed(2);
+    $('bar-ne').style.width=pct(d.NE||0);$('pc-ne').textContent=(d.NE||0).toFixed(2);
+    $('bar-ach').style.width=pct(d.ACh||0);$('pc-ach').textContent=(d.ACh||0).toFixed(2);
+
+    // Allostatic Core
+    $('bar-allo').style.width=pct(d.allostatic_load||0);$('pc-allo').textContent=(d.allostatic_load||0).toFixed(3);
+    $('bar-homeo').style.width=Math.min(100, (d.homeostatic_error||0)*20)+'%';$('pc-homeo').textContent=(d.homeostatic_error||0).toFixed(2);
+    $('bar-social').style.width=pct(d.social_comfort||0);$('pc-social').textContent=(d.social_comfort||0).toFixed(2);
+
+    // Biological States
+    $('tel-sleep').textContent = d.sleep_phase || 'AWAKE';
+    $('tel-hebb').textContent = (d.hebbian_strength || 0).toFixed(3);
+    $('tel-pred').textContent = (d.prediction_error || 0).toFixed(3);
+    $('tel-rem').textContent = d.rem_count || 0;
+
+    $('s-ep').textContent=d.episode;
+    $('s-best').textContent=(d.best_survival||0).toFixed(1)+'s';
+    if(d.best_dist_ever!==undefined) $('s-dist').textContent=d.best_dist_ever.toFixed(2)+'m';
+    if(d.target_reached_count!==undefined) $('s-reach').textContent=d.target_reached_count;
+
+    const wd=chart.data.datasets[0].data,ld=chart.data.datasets[1].data;
+    wd.push(d.surprise_wm||0);wd.shift();ld.push(d.surprise_ltm||0);ld.shift();chart.update();
+
+    if(d.danger_grid)drawHeat(d.danger_grid);
+  };
+}
+connect();
+</script>
+</body>
+</html>

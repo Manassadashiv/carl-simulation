@@ -1,0 +1,23 @@
+# Virtual environment
+venv/
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and checkpoints
+logs/
+*.log
+final_build_checkpoint/
+
+# Large archives
+*.zip
+*.tar.gz
+*.tgz
+*.rar
