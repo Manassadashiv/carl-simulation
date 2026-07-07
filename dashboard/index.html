@@ -300,7 +300,7 @@ function renderSwarm(d) {
 }
 
 function connect(){
-  const ws=new WebSocket('ws://localhost:8765');
+  const ws=new WebSocket('ws://localhost:8766');
   ws.onopen=()=>{$('dot').classList.add('on');$('ctext').textContent='BRAIN SYNCED (30Hz)';$('ctext').style.color='var(--green)';};
   ws.onclose=()=>{$('dot').classList.remove('on');$('ctext').textContent='RECONNECTING...';$('ctext').style.color='var(--red)';setTimeout(connect,1500);};
   ws.onmessage=(ev)=>{
