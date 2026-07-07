@@ -36,6 +36,14 @@ We are actively seeking contributions, design critiques, and complete pull reque
   * Better control-theory loops connecting cortisol/arousal to physical joint limits or damping factors.
   * Better implementation of Central Pattern Generators (CPGs) for navigation.
 
+### 5. Body Equipment & Physical Design Modifications (Morphology & Hardware Problem)
+* **The Issue:** Carl's physical layout—his limb ratios, finger geometry (3-fingered hands), sensor placements, and bipedal vs. wheeled chassis layouts—needs design optimization. The current layout has blind spots, self-collision zones, and kinematic reach limitations.
+* **What We Need:**
+  * **Gripper/Hand Redesign:** Suggestions and XML edits for better hand morphology (e.g., adding compliant padding parameters, adjusting thumb opposition, or scaling up to 5-fingered hands).
+  * **Sensor Payload Optimization:** Optimal physical placement for LiDAR, cameras, and joint touch sensors to maximize feedback and minimize sensory occlusion.
+  * **Limb & Link Proportions:** Optimal forearm-to-upper-arm length ratios to maximize the physical reaching workspace while minimizing locking singularities.
+  * **Bipedal Chassis Design:** Joint layouts and balance configurations to stabilize the bipedal chassis variant of Carl.
+
 ---
 
 ## 💡 How You Can Help
