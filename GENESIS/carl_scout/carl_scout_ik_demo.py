@@ -138,7 +138,7 @@ def ik_step(body, data, target_pos, side='L'):
     dx = target_pos - tip_pos
 
     # Damped Least Squares inverse
-    lambda_sq = 0.015
+    lambda_sq = 0.04
     J_dls = J.T @ np.linalg.inv(J @ J.T + lambda_sq * np.eye(3))
     dq = J_dls @ dx
 
@@ -303,7 +303,7 @@ def run_demo_generation(num_episodes=500, max_steps=200, render=False, seed=42):
             data.ctrl[ARMS_CTRL] = action_raw
 
             # Step physics (multiple sub-steps for stability)
-            for _ in range(10):
+            for _ in range(25):
                 mujoco.mj_step(model, data)
 
             if viewer and viewer.is_running():

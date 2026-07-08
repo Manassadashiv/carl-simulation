@@ -387,7 +387,7 @@ def run_autonomous_loop(episodes=2, max_steps=1200):
                 # (matches training: targets were placed at z=0.02-0.15, cube at target)
                 cube_pos     = objs[sm.tgt_idx]
                 arm_target   = cube_pos.copy()   # approach cube at cube height, no z offset
-                arm_ctrl_cmd = cortex.decide_arms(override_target=arm_target, dt=0.005)
+                arm_ctrl_cmd = cortex.decide_arms(override_target=arm_target, dt=0.006)
 
             data.ctrl[ARMS_CTRL] = np.clip(arm_ctrl_cmd, ARM_CTRL_LOW, ARM_CTRL_HIGH)
 

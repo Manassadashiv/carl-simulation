@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <mujoco model="CARL Primate Scout">
-  <option timestep="0.005" gravity="0 0 -9.81" solver="Newton" integrator="implicit" />
+  <option timestep="0.002" gravity="0 0 -9.81" solver="Newton" integrator="implicit" />
   <compiler angle="radian" coordinate="local" inertiafromgeom="true" />
 
   <default>
